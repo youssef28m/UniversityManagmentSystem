@@ -9,9 +9,9 @@ public abstract class User {
     public User() {}
 
 
-    public User(String username, String password, String name, String email, String contactInfo) {
+    public User(String userId, String username, String password, String name, String email, String contactInfo) {
         this.userId = userId;
-        setUsername(email);
+        setUsername(username);
         setPassword(password);
         this.name = name;
         setEmail(email);
@@ -49,7 +49,7 @@ public abstract class User {
     public void setPassword(String password) {
         if (password.length() < 6 ) {
             throw new IllegalArgumentException("Password must be at least 6 characters long");
-        } else if (password.matches(".*\\d.*")) {
+        } else if (!password.matches(".*\\d.*")) {
             throw new IllegalArgumentException("Password must contains at least one number");
         } else {
             this.password = password;
