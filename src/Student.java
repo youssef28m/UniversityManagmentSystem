@@ -3,13 +3,17 @@ import java.util.ArrayList;
 public class Student extends User{
     private String studentId;
     private String admissionDate;
-    private AcademicStatus academicStatus = AcademicStatus.ACTIVE;  // Correct initialization
-    private ArrayList<Integer> enrolledCourses;
+    private AcademicStatus academicStatus = AcademicStatus.ACTIVE;
+    private ArrayList<Integer> enrolledCourses = new ArrayList<>();
 
-    public Student(String studentId, String admissionDate, String academicStatus) {
+    public Student(String userId, String username, String password, String name, String email, String contactInfo,
+                   String studentId, String admissionDate, String academicStatus, ArrayList<Integer> enrolledCourses) {
+        super(userId, username, password, name, email, contactInfo);
         this.studentId = studentId;
         this.admissionDate = admissionDate;
         this.academicStatus = AcademicStatus.fromString(academicStatus);
+        this.enrolledCourses = enrolledCourses;
+        setUserType(UserType.STUDENT);
     }
 
     public Student(String userId, String username, String password, String name, String email, String contactInfo,
@@ -18,6 +22,7 @@ public class Student extends User{
         this.studentId = studentId;
         this.admissionDate = admissionDate;
         this.academicStatus = AcademicStatus.fromString(academicStatus);
+        setUserType(UserType.STUDENT);
     }
 
     public enum AcademicStatus {
@@ -56,6 +61,10 @@ public class Student extends User{
         return "";
     }
 
+
+    //----------------------------------------------------------//
+    // geters and setters
+    //----------------------------------------------------------//
     public String getStudentId() {
         return studentId;
     }

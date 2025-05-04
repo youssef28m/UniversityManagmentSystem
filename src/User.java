@@ -5,6 +5,7 @@ public abstract class User {
     private String name;
     private String email;
     private String contactInfo;
+    private UserType userType;
 
     public User() {}
 
@@ -21,6 +22,24 @@ public abstract class User {
     abstract String login();
     abstract String logout();
     abstract String updateProfile();
+
+    public enum UserType {
+
+        STUDENT("Student"),
+        FACULTY("Faculty"),
+        ADMIN_STAFF("Admin Staff"),
+        SYSTEM_ADMIN("System Admin");
+
+        private final String displayName;
+
+        UserType(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+    }
 
     public String getUserId() {
         return userId;
@@ -82,5 +101,13 @@ public abstract class User {
 
     public void setContactInfo(String contactInfo) {
         this.contactInfo = contactInfo;
+    }
+
+    public UserType getUserType() {
+        return userType;
+    }
+
+    public void setUserType(UserType userType) {
+        this.userType = userType;
     }
 }
