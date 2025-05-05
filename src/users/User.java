@@ -1,3 +1,5 @@
+package users;
+
 public abstract class User {
     private String userId;
     private String username;
@@ -19,14 +21,13 @@ public abstract class User {
         this.contactInfo = contactInfo;
     }
 
-    abstract String login();
-    abstract String logout();
+
     abstract String updateProfile();
 
     public enum UserType {
 
-        STUDENT("Student"),
-        FACULTY("Faculty"),
+        STUDENT("users.Student"),
+        FACULTY("users.Faculty"),
         ADMIN_STAFF("Admin Staff"),
         SYSTEM_ADMIN("System Admin");
 

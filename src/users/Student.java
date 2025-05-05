@@ -1,6 +1,8 @@
+package users;
+
 import java.util.ArrayList;
 
-public class Student extends User{
+public class Student extends User {
     private String studentId;
     private String admissionDate;
     private AcademicStatus academicStatus = AcademicStatus.ACTIVE;
@@ -51,12 +53,6 @@ public class Student extends User{
     }
 
     @Override
-    public String login() {
-        return "";
-    }
-    public String logout() {
-        return "";
-    }
     public String updateProfile() {
         return "";
     }
