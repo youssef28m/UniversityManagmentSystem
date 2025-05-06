@@ -7,7 +7,10 @@ private String  prerequisites;
 private String  schedule;
 private String instructor;
 private String enrolledstudents;
-public Course(private int courseid, String title,String description,int creditHours,String  prerequisites,String  schedule,String instructor,String enrolledstudents){
+private List<String> enrolledStudents;
+private int maxCapacity = 30; // Default maximum capacity
+// Constructor
+public Course(int courseid, String title,String description,int creditHours,String  prerequisites,String  schedule,String instructor,String enrolledstudents){
     this.courseid=courseid;
     this.title=title;
     this.description=description;
@@ -44,6 +47,12 @@ public String getenrolledstudents(){
 
     public void addStudent(String student) {
         if (enrolledStudents.size() < maxCapacity) {
+            System.out.println("Enter your name:");
+            Scanner s = new Scanner(System.in);
+            String student = s.next();
+            System.out.println("Enter your ID:");
+            Scanner s = new Scanner(System.in);
+            String studentId = s.next();
             enrolledStudents.add(student);
             System.out.println("Student " + student + " has been added to the course.");
         } else {
@@ -54,6 +63,12 @@ public String getenrolledstudents(){
 
     public void removeStudent(String student) {
         if (enrolledStudents.contains(student)) {
+            System.out.println("Enter your name:");
+            Scanner s = new Scanner(System.in);
+            String student = s.next();
+            System.out.println("Enter your ID:");
+            Scanner s = new Scanner(System.in);
+            String studentId = s.next();
             enrolledStudents.remove(student);
             System.out.println("Student " + student + " has been removed from the course.");
         } else {
