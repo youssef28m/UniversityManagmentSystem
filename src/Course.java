@@ -1,5 +1,7 @@
+
 import java.util.ArrayList;
 import java.util.List;
+
 
 public class Course {
 
@@ -12,6 +14,7 @@ public class Course {
     private String instructor;
     private int maxCapacity;
     private ArrayList<String> enrolledStudents;
+
 
     // Constructor
     public Course(int courseId, String title, String description, int creditHours,
@@ -38,7 +41,7 @@ public class Course {
     public boolean isPrerequisiteSatisfied(String studentId) {
         // Method to be implemented
         return false;
-    }
+
 
     public int getAvailableSeats() {
         // Method to be implemented
