@@ -27,6 +27,7 @@ public class Course {
         this.enrolledStudents = new ArrayList<>(); // Initialize the enrolledStudents list
     }
 
+    // Method to add a student to the course
     public void addStudent(String student, String studentId) {
         if (enrolledStudents.size() < maxCapacity) {
             enrolledStudents.add(student);
@@ -36,7 +37,7 @@ public class Course {
             System.out.println("Cannot add student " + student + ": Course is full.");
         }
     }
-
+    // Method to remove a student from the course
     public void removeStudent(String student, String studentId) {
         if (enrolledStudents.contains(student)) {
             enrolledStudents.remove(student);
@@ -46,7 +47,7 @@ public class Course {
             System.out.println("Student " + student + " is not enrolled in the course.");
         }
     }
-
+    // Method to check if prerequisites are satisfied
     public boolean isPrerequisiteSatisfied(List<Integer> completedCourseIds) {
         if (prerequisites == null || prerequisites.isEmpty()) {
             return true; // No prerequisites
@@ -54,7 +55,11 @@ public class Course {
         // Check if all prerequisites are satisfied
         return completedCourseIds.containsAll(prerequisites);
     }
-
+    // Method to check if a student is enrolled
+    public boolean isStudentEnrolled(String student) {
+        return enrolledStudents.contains(student);
+    }
+    // Method to get the number of available seats
     public int getAvailableSeats() {
         if (maxCapacity <= 0) {
             throw new IllegalArgumentException("Max capacity must be greater than zero.");
