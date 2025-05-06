@@ -1,7 +1,5 @@
-
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class Course {
 
@@ -15,7 +13,6 @@ public class Course {
     private int maxCapacity;
     private ArrayList<String> enrolledStudents;
 
-
     // Constructor
     public Course(int courseId, String title, String description, int creditHours,
                   ArrayList<Integer> prerequisites, String schedule, String instructor, int maxCapacity) {
@@ -25,36 +22,23 @@ public class Course {
         this.creditHours = creditHours;
         this.prerequisites = prerequisites;
         this.schedule = schedule;
-        this.maxCapacity = maxCapacity;
         this.instructor = instructor;
+        this.maxCapacity = maxCapacity;
+        this.enrolledStudents = new ArrayList<>(); // Initialize the enrolledStudents list
     }
 
-
-       public void addStudent(String student) {
+    public void addStudent(String student, String studentId) {
         if (enrolledStudents.size() < maxCapacity) {
-            System.out.println("Enter your name:");
-            Scanner s = new Scanner(System.in);
-            String student = s.next();
-            System.out.println("Enter your ID:");
-            Scanner s = new Scanner(System.in);
-            String studentId = s.next();
             enrolledStudents.add(student);
             enrolledStudents.add(studentId);
             System.out.println("Student " + student + " has been added to the course.");
         } else {
             System.out.println("Cannot add student " + student + ": Course is full.");
         }
-
     }
 
-    public void removeStudent(String student) {
+    public void removeStudent(String student, String studentId) {
         if (enrolledStudents.contains(student)) {
-            System.out.println("Enter your name:");
-            Scanner s = new Scanner(System.in);
-            String student = s.next();
-            System.out.println("Enter your ID:");
-            Scanner s = new Scanner(System.in);
-            String studentId = s.next();
             enrolledStudents.remove(student);
             enrolledStudents.remove(studentId);
             System.out.println("Student " + student + " has been removed from the course.");
@@ -63,29 +47,26 @@ public class Course {
         }
     }
 
-    public boolean isPrerequisiteSatisfied(List<String> completedCourses) {
+    public boolean isPrerequisiteSatisfied(List<Integer> completedCourseIds) {
         if (prerequisites == null || prerequisites.isEmpty()) {
             return true; // No prerequisites
         }
-        String[] prerequisiteArray = prerequisites.split(",");
-        List<String> prerequisites = Arrays.asList(prerequisiteArray);
         // Check if all prerequisites are satisfied
-        return completedCourses.containsAll(prerequisites);
-    
+        return completedCourseIds.containsAll(prerequisites);
+    }
 
-    public int getAvailableSeats(int maxCapacity) {
+    public int getAvailableSeats() {
         if (maxCapacity <= 0) {
             throw new IllegalArgumentException("Max capacity must be greater than zero.");
         }
         if (enrolledStudents == null) {
-            enrolledStudents = new ArrayList<>();
+            return maxCapacity; // If enrolledStudents is null, all seats are available
         }
         if (enrolledStudents.size() > maxCapacity) {
             throw new IllegalStateException("Enrolled students exceed max capacity.");
         }
         return maxCapacity - enrolledStudents.size();
     }
-}
 
     // Getters and Setters
     public int getCourseId() {
