@@ -1,97 +1,120 @@
-public class Course extends User {
-private int courseid;
-private String title;
-private String description;
-private int creditHours;
-private String  prerequisites;
-private String  schedule;
-private String instructor;
-private String enrolledstudents;
-public Course(String userId,String name,private int courseid, String title,String description,int creditHours,String  prerequisites,String  schedule,String instructor,String enrolledstudents){
-    super(userId,name)
-    this.courseid=courseid;
-    this.title=title;
-    this.description=description;
-    this.creditHours=creditHours;
-    this.prerequisites=prerequisites;
-    this.schedule=schedule;
-    this.instructor=instructor;
-    this.enrolledstudents=enrolledstudents;
+import java.util.ArrayList;
+import java.util.List;
 
-}
-public int getcourseid(){
-    return courseid;
-}
-public String gettitle(){
-    return title;
-}
-public String getdescription(){
-    return description;
-}
-public int getcreditHours(){
-    return creditHours;
-}
-public String getprerequisites(){
-    return prerequisites;
-}public String getschedule(){
-    return schedule;
-}
-public String getinstructor(){
-    return instructor;
-}
-public String getenrolledstudents(){
-    return enrolledstudents;
-}
+public class Course {
 
-    public void addStudent(String student) {
-        enrolledStudents.add(student);
-    System.out.println("Student " + student + " has been added to the course.");
+    private int courseId;
+    private String title;
+    private String description;
+    private int creditHours;
+    private ArrayList<Integer> prerequisites;
+    private String schedule;
+    private String instructor;
+    private int maxCapacity;
+    private ArrayList<String> enrolledStudents;
+
+    // Constructor
+    public Course(int courseId, String title, String description, int creditHours,
+                  ArrayList<Integer> prerequisites, String schedule, String instructor, int maxCapacity) {
+        this.courseId = courseId;
+        this.title = title;
+        this.description = description;
+        this.creditHours = creditHours;
+        this.prerequisites = prerequisites;
+        this.schedule = schedule;
+        this.maxCapacity = maxCapacity;
+        this.instructor = instructor;
     }
 
-    public void removeStudent(String student) {
-        enrolledStudents.remove(student);
-        System.out.println("Student " + student + " has been removed from the course.");
+
+    public void addStudent(String studentId) {
+        // Method to be implemented
     }
 
-    public boolean isPrerequisiteSatisfied(List<String> completedCourses) {
-        return completedCourses.containsAll(prerequisites);
-    
-
-    public int getAvailableSeats(int maxCapacity) {
-        return maxCapacity - enrolledStudents.size();
+    public void removeStudent(String studentId) {
+        // Method to be implemented
     }
-}
 
+    public boolean isPrerequisiteSatisfied(String studentId) {
+        // Method to be implemented
+        return false;
+    }
+
+    public int getAvailableSeats() {
+        // Method to be implemented
+        return 0;
+    }
+
+    // Getters and Setters
+    public int getCourseId() {
+        return courseId;
+    }
 
     public void setCourseId(int courseId) {
         this.courseId = courseId;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     public void setTitle(String title) {
         this.title = title;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public int getCreditHours() {
+        return creditHours;
     }
 
     public void setCreditHours(int creditHours) {
         this.creditHours = creditHours;
     }
 
-    public void setPrerequisites(String prerequisites) {
+    public ArrayList<Integer> getPrerequisites() {
+        return prerequisites;
+    }
+
+    public void setPrerequisites(ArrayList<Integer> prerequisites) {
         this.prerequisites = prerequisites;
+    }
+
+    public String getSchedule() {
+        return schedule;
     }
 
     public void setSchedule(String schedule) {
         this.schedule = schedule;
     }
 
+    public String getInstructor() {
+        return instructor;
+    }
+
     public void setInstructor(String instructor) {
         this.instructor = instructor;
     }
 
-    public void setEnrolledStudents(List<String> enrolledStudents) {
+    public List<String> getEnrolledStudents() {
+        return enrolledStudents;
+    }
+
+    public void setEnrolledStudents(ArrayList<String> enrolledStudents) {
         this.enrolledStudents = enrolledStudents;
+    }
+
+    public int getMaxCapacity() {
+        return maxCapacity;
+    }
+
+    public void setMaxCapacity(int maxCapacity) {
+        this.maxCapacity = maxCapacity;
     }
 }
