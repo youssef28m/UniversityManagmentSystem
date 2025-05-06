@@ -519,10 +519,10 @@ public class DatabaseManager {
                 "VALUES(?,?,?,?)";
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, enrollment.getStudentId());
-            pstmt.setInt(2, enrollment.getCourseId());
+            pstmt.setString(1, enrollment.getStudent());
+            pstmt.setInt(2, enrollment.getCourse());
             pstmt.setString(3, enrollment.getEnrollmentDate());
-            pstmt.setString(4, enrollment.getStatusValue());
+            pstmt.setString(4, enrollment.getStatus());
             pstmt.executeUpdate();
             return true;
 
@@ -532,12 +532,12 @@ public class DatabaseManager {
         }
     }
 
-    public boolean removeStudentFromCourse(String studentId, String courseId) {
+    public boolean removeStudentFromCourse(String studentId, int courseId) {
         String sql = "DELETE FROM enrollments WHERE student_id = ? AND course_id = ?";
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, studentId);
-            pstmt.setString(2, courseId);
+            pstmt.setInt(2, courseId);
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
@@ -551,9 +551,9 @@ public class DatabaseManager {
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, enrollment.getGrade());
-            pstmt.setString(2, enrollment.getStatusValue());
-            pstmt.setString(3, enrollment.getStudentId());
-            pstmt.setInt(4, enrollment.getCourseId());
+            pstmt.setString(2, enrollment.getStatus());
+            pstmt.setString(3, enrollment.getStudent());
+            pstmt.setInt(4, enrollment.getCourse());
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
@@ -562,12 +562,12 @@ public class DatabaseManager {
         }
     }
 
-    public List<String> getStudentsInCourse(String courseId) {
+    public List<String> getStudentsInCourse(int courseId) {
         List<String> studentIds = new ArrayList<>();
         String sql = "SELECT student_id FROM enrollments WHERE course_id = ?";
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, courseId);
+            pstmt.setInt(1, courseId);
             try (var rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     studentIds.add(rs.getString("student_id"));
