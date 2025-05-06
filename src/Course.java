@@ -54,6 +54,7 @@ public String getenrolledstudents(){
             Scanner s = new Scanner(System.in);
             String studentId = s.next();
             enrolledStudents.add(student);
+            enrolledStudents.add(studentId);
             System.out.println("Student " + student + " has been added to the course.");
         } else {
             System.out.println("Cannot add student " + student + ": Course is full.");
@@ -70,6 +71,7 @@ public String getenrolledstudents(){
             Scanner s = new Scanner(System.in);
             String studentId = s.next();
             enrolledStudents.remove(student);
+            enrolledStudents.remove(studentId);
             System.out.println("Student " + student + " has been removed from the course.");
         } else {
             System.out.println("Student " + student + " is not enrolled in the course.");
