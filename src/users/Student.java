@@ -105,19 +105,70 @@ public class Student extends User {
         else return 0.0;
     }
 
-    public  double calculateGPA(double[] grades, int[] credits) {
-        double totalPoints = 0;
-        int totalCredits = 0;
-
-        for (int i = 0; i < grades.length; i++) {
-            double gpa = gradeToGPA(grades[i]);
-            totalPoints += gpa * credits[i];
-            totalCredits += credits[i];
+          
+    public void registerForCourse(Course course) {
+        if (course.getAvailableSeats() <= 0) {
+            System.out.println("Registration failed: No available seats in " + course.getTitle());
+            return;
         }
+        if (!course.isPrerequisiteSatisfied(this)) {
+            System.out.println("Registration failed: Prerequisites not satisfied.");
+            return;
+        }
+        if (enrolledCourses.contains(course)) {
+            System.out.println("You are already registered in this course.");
+            return;
+        }
+        enrolledCourses.add(course);
+        course.addStudent(this);
+        System.out.println("Successfully registered for " + course.getTitle());
+    }
+    public void dropCourse(Course course) {
+        if (!enrolledCourses.contains(course)) {
+            System.out.println("You are not registered in this course.");
+            return;
+        }
+        enrolledCourses.remove(course);
+        course.removeStudent(this);
+        System.out.println("Successfully dropped " + course.getTitle());
+    }    
+    public void viewGrades() {
+        if (enrolledCourses.isEmpty()) {
+            System.out.println("You are not enrolled in any courses.");
+            return;
+        }
+        System.out.println("Grades for " + getName() + ":");
+        for (Course course : enrolledCourses) {
+            Enrollment enrollment = course.getEnrollmentForStudent(this);
+            String grade = (enrollment != null) ? enrollment.getGrade() : "N/A";
+            System.out.println(course.getTitle() + ": " + grade);
+        }
+    }
+    public void viewEnrolledCourses() {
+        if (enrolledCourses.isEmpty()) {
+            System.out.println("You are not enrolled in any courses.");
+        }
+        System.out.println("Enrolled courses for " + getName() + ":");
+        for (Course course : enrolledCourses) {
+            System.out.println(course.getTitle());
+        }
+    } 
+    public double calculateGPA() {
+        double totalPoints = 0.0;
+        int totalCourses = enrolledCourses.size();
+        if (totalCourses == 0) return 0.0;
 
-        if (totalCredits == 0) return 0.0;
-        return Math.round((totalPoints / totalCredits) * 100.0) / 100.0;
-    }        
-
+        for (int courseId : enrolledCourses) {
+            Course course = Course.getCourseById(courseId);
+            if (course != null) {
+                Enrollment enrollment = course.getEnrollmentForStudent(this);
+                if (enrollment != null) {
+                    double grade = enrollment.getGrade();
+                    totalPoints += gradeToGPA(grade);
+                }
+            }
+        }
+        return totalPoints / totalCourses;
+    }     
     
 }
