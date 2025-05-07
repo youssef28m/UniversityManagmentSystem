@@ -59,4 +59,51 @@ public class Faculty extends User {
     public void setCoursesTeaching(ArrayList<String> coursesTeaching) {
         this.coursesTeaching = coursesTeaching;
     }
+    public void assignGrades(Student student, Course course, String grade) {
+        if (!coursesTeaching.contains(course)) {
+            System.out.println("You do not teach this course.");
+            return;
+        }
+        Enrollment enrollment = course.getEnrollmentForStudent(student);
+        if (enrollment == null) {
+            System.out.println("The student is not enrolled in this course.");
+            return;
+        }
+        enrollment.assignGrade(grade);
+        System.out.println("Grade assigned successfully to " + student.getName() + " in " + course.getTitle());
+    }
+    public void manageCourse(Course course) {
+        if (!coursesTeaching.contains(course)) {
+            System.out.println("You do not have permission to manage this course.");
+            return;
+        }
+    
+        // Placeholder for management actions (e.g., edit title, description, etc.)
+        System.out.println("Managing course: " + course.getTitle());
+        // Example: course.setTitle("New Title");
+    }
+    private String officeHours;
+
+public void setOfficeHours(String officeHours) {
+    this.officeHours = officeHours;
+    System.out.println("Office hours updated to: " + officeHours);
+}
+
+public String getOfficeHours() {
+    return officeHours;
+}
+public void viewStudentRoster(Course course) {
+    if (!coursesTeaching.contains(course)) {
+        System.out.println("You are not assigned to this course.");
+        return;
+    }
+
+    List<Student> students = course.getEnrolledStudents();
+    System.out.println("Students enrolled in " + course.getTitle() + ":");
+    for (Student student : students) {
+        System.out.println("- " + student.getName() + " (" + student.getStudentId() + ")");
+    }
+}
+
+
 }
