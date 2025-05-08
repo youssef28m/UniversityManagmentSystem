@@ -1,5 +1,9 @@
 package users;
+import academics.*;
+import database.DatabaseManager;
+
 import java.util.ArrayList;
+import java.util.List;
 
 public class Faculty extends User {
 
@@ -7,6 +11,7 @@ public class Faculty extends User {
     private int department = -1;
     private String expertise;
     private ArrayList<String> coursesTeaching;
+    private DatabaseManager db = new DatabaseManager();
 
 
     public Faculty(String userId, String username, String password, String name, String email, String contactInfo, String facultyId,  String expertise) {
@@ -59,6 +64,7 @@ public class Faculty extends User {
     public void setCoursesTeaching(ArrayList<String> coursesTeaching) {
         this.coursesTeaching = coursesTeaching;
     }
+
     public void assignGrades(Student student, Course course, String grade) {
         if (!coursesTeaching.contains(course)) {
             System.out.println("You do not teach this course.");
@@ -77,7 +83,7 @@ public class Faculty extends User {
             System.out.println("You do not have permission to manage this course.");
             return;
         }
-    
+
         // Placeholder for management actions (e.g., edit title, description, etc.)
         System.out.println("Managing course: " + course.getTitle());
         // Example: course.setTitle("New Title");
@@ -104,6 +110,7 @@ public void viewStudentRoster(Course course) {
         System.out.println("- " + student.getName() + " (" + student.getStudentId() + ")");
     }
 }
+
 
 
 }
