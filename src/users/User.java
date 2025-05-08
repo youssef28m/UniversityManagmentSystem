@@ -26,8 +26,8 @@ public abstract class User {
 
     public enum UserType {
 
-        STUDENT("users.Student"),
-        FACULTY("users.Faculty"),
+        STUDENT("Student"),
+        FACULTY("Faculty"),
         ADMIN_STAFF("Admin Staff"),
         SYSTEM_ADMIN("System Admin");
 
@@ -69,8 +69,6 @@ public abstract class User {
     public void setPassword(String password) {
         if (password.length() < 6 ) {
             throw new IllegalArgumentException("Password must be at least 6 characters long");
-        } else if (!password.matches(".*\\d.*")) {
-            throw new IllegalArgumentException("Password must contains at least one number");
         } else {
             this.password = password;
         }

@@ -1,62 +1,63 @@
+package academics;
+import database.*;
+import users.Student;
+import util.Helper;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Enrollment{
-    private String student;
-    private int course;
+    private Student student;
+    private Course course;
     private String enrollmentDate;
     private int grade;
     private String status;
-    private DatabaseManager db;
+    private DatabaseManager db = new DatabaseManager();
 
-    public Enrollment(String student, int course, String enrollmentDate, int grade, String status, DatabaseManager db) {
+    public Enrollment(Student student, Course course, String enrollmentDate, int grade, String status) {
         setCourse(course);
         this.student = student;
         setEnrollmentDate(enrollmentDate);
         assignGrade(grade);
         setStatus(status);
-        this.db = db;
     }
 
-    public Enrollment(String student, int course, String status, DatabaseManager db) {
+    public Enrollment(Student student, Course course, String status) {
         setCourse(course);
         this.student = student;
         this.enrollmentDate = LocalDate.now().toString();
         setStatus(status);
-        this.db = db;
     }
 
-    public Enrollment(String student, int course,  int grade, String status, DatabaseManager db) {
+    public Enrollment(Student student, Course course,  int grade, String status) {
         setCourse(course);
         this.student = student;
         this.enrollmentDate = LocalDate.now().toString();
         assignGrade(grade);
         setStatus(status);
-        this.db = db;
     }
 
-    public String getStudent() {
+    public Student getStudent() {
         return student;
     }
 
-    public void setStudent(String student) {
+    public void setStudent(Student student) {
         this.student = student;
     }
 
-    public int getCourse() {
+    public Course getCourse() {
         return course;
     }
 
-    public void setCourse(int courseId) {
-        ArrayList<List<Object>> courses = db.getAllCourses();
-        ArrayList<Integer> coursesIds = new ArrayList<>();
+    public void setCourse(Course course) {
+        ArrayList<List<Object>> dbCourses = db.getAllCourses();
+        ArrayList<Integer> courseIds = new ArrayList<>();
 
-        for (List<Object> course : courses) {
-            coursesIds.add((Integer) course.get(0));
+        for (List<Object> dbCourse : dbCourses) {
+            courseIds.add((Integer) dbCourse.get(0));
         }
-        if (coursesIds.contains(courseId)) {
-            this.course = courseId;
+        if (courseIds.contains(course.getCourseId())) {
+            this.course = course;
         } else {
             throw new IllegalArgumentException("there is not course with this id");
         }
@@ -80,9 +81,9 @@ public class Enrollment{
 
     public void setStatus(String status) {
 
-        List<String> validStatuses = List.of("Active", "Withdrawn", "Completed", "Pending", "Failed");
+        List<String> validStatuses = List.of("active", "withdrawn", "completed");
 
-        if (status != null && validStatuses.contains(status)) {
+        if (status != null && validStatuses.contains(status.toLowerCase())) {
             this.status = status;
         } else {
             throw new IllegalArgumentException("Invalid enrollment status. Valid options are: "
@@ -105,7 +106,7 @@ public class Enrollment{
 
 
     public boolean withdraw() {
-        if (db.getStudentsInCourse(course).contains(student)) {
+        if (db.getStudentsInCourse(course.getCourseId()).contains(student.getStudentId())) {
             this.status = "Withdrawn";
             db.updateEnrollment(this);
             return true;
@@ -116,13 +117,12 @@ public class Enrollment{
 
     @Override
     public String toString() {
-        return "Enrollment{" +
-                "student='" + student + '\'' +
-                ", course=" + course +
+        return "acadimics.Enrollment{" +
+                "student='" + student.getStudentId() + '\'' +
+                ", course=" + course.getCourseId() +
                 ", enrollmentDate='" + enrollmentDate + '\'' +
                 ", grade=" + grade +
                 ", status='" + status + '\'' +
-                ", db=" + db +
                 '}';
     }
 }

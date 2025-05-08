@@ -1,3 +1,8 @@
+package academics;
+import database.DatabaseManager;
+import users.Student;
+
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,15 +12,16 @@ public class Course {
     private String title;
     private String description;
     private int creditHours;
-    private ArrayList<Integer> prerequisites;
+    private List<Integer> prerequisites;
     private String schedule;
     private String instructor;
-    private int maxCapacity;
-    private ArrayList<String> enrolledStudents;
+    private int maxCapacity = 30;
+    private List<String> enrolledStudents;
+    private DatabaseManager db = new DatabaseManager();
 
     // Constructor
     public Course(int courseId, String title, String description, int creditHours,
-                  ArrayList<Integer> prerequisites, String schedule, String instructor, int maxCapacity) {
+                  List<Integer> prerequisites, String schedule, String instructor, int maxCapacity) {
         this.courseId = courseId;
         this.title = title;
         this.description = description;
@@ -27,39 +33,75 @@ public class Course {
         this.enrolledStudents = new ArrayList<>(); // Initialize the enrolledStudents list
     }
 
-    // Method to add a student to the course
-    public void addStudent(String student, String studentId) {
-        if (enrolledStudents.size() < maxCapacity) {
-            enrolledStudents.add(student);
-            enrolledStudents.add(studentId);
-            System.out.println("Student " + student + " has been added to the course.");
+    public Course(int courseId, String title, String description, int creditHours, List<Integer> prerequisites, String schedule, String instructor, int maxCapacity, List<String> enrolledStudents) {
+        this.courseId = courseId;
+        this.title = title;
+        this.description = description;
+        this.creditHours = creditHours;
+        this.prerequisites = prerequisites;
+        this.schedule = schedule;
+        this.instructor = instructor;
+        this.maxCapacity = maxCapacity;
+        this.enrolledStudents = enrolledStudents;
+    }
+
+    public boolean addStudent(Student student) {
+        if (enrolledStudents.contains(student.getStudentId())) {
+            throw new IllegalArgumentException("Student already exists in course");
+        }
+
+        // Check if student is in database
+        boolean inDB = false;
+        ArrayList<String[]> dbStudents = db.getAllStudents();
+
+        for (String[] dbStudent : dbStudents) {
+            if (dbStudent[0].equals(student.getStudentId())) {
+                inDB = true;
+                break;
+            }
+        }
+
+        if (enrolledStudents.size() >= maxCapacity) {
+            System.out.println("Course is full.");
+            return false;
+        }
+
+        if (inDB) {
+            enrolledStudents.add(student.getStudentId());
+            return true;
         } else {
-            System.out.println("Cannot add student " + student + ": Course is full.");
+            System.out.println("Student not found in database.");
+            return false;
         }
     }
-    // Method to remove a student from the course
-    public void removeStudent(String student, String studentId) {
-        if (enrolledStudents.contains(student)) {
-            enrolledStudents.remove(student);
-            enrolledStudents.remove(studentId);
-            System.out.println("Student " + student + " has been removed from the course.");
-        } else {
-            System.out.println("Student " + student + " is not enrolled in the course.");
+
+
+    public boolean removeStudent(Student student) {
+        if (!enrolledStudents.contains(student.getStudentId())) {
+            return false;
         }
+
+        enrolledStudents.remove(student.getStudentId());
+        return true;
     }
+
+
     // Method to check if prerequisites are satisfied
     public boolean isPrerequisiteSatisfied(List<Integer> completedCourseIds) {
         if (prerequisites == null || prerequisites.isEmpty()) {
-            return true; // No prerequisites
+            return true;
+        }
+        if (completedCourseIds == null) {
+            return false;
         }
         // Check if all prerequisites are satisfied
         return completedCourseIds.containsAll(prerequisites);
     }
-    // Method to check if a student is enrolled
-    public boolean isStudentEnrolled(String student) {
-        return enrolledStudents.contains(student);
+
+    public boolean isStudentEnrolled(String studentId) {
+        return enrolledStudents.contains(studentId);
     }
-    // Method to get the number of available seats
+
     public int getAvailableSeats() {
         if (maxCapacity <= 0) {
             throw new IllegalArgumentException("Max capacity must be greater than zero.");
@@ -73,7 +115,11 @@ public class Course {
         return maxCapacity - enrolledStudents.size();
     }
 
+
+
     // Getters and Setters
+
+
     public int getCourseId() {
         return courseId;
     }
@@ -106,11 +152,11 @@ public class Course {
         this.creditHours = creditHours;
     }
 
-    public ArrayList<Integer> getPrerequisites() {
+    public List<Integer> getPrerequisites() {
         return prerequisites;
     }
 
-    public void setPrerequisites(ArrayList<Integer> prerequisites) {
+    public void setPrerequisites(List<Integer> prerequisites) {
         this.prerequisites = prerequisites;
     }
 
@@ -134,7 +180,7 @@ public class Course {
         return enrolledStudents;
     }
 
-    public void setEnrolledStudents(ArrayList<String> enrolledStudents) {
+    public void setEnrolledStudents(List<String> enrolledStudents) {
         this.enrolledStudents = enrolledStudents;
     }
 
@@ -144,5 +190,20 @@ public class Course {
 
     public void setMaxCapacity(int maxCapacity) {
         this.maxCapacity = maxCapacity;
+    }
+
+    @Override
+    public String toString() {
+        return "Course{" +
+                "courseId=" + courseId +
+                ", title='" + title + '\'' +
+                ", description='" + description + '\'' +
+                ", creditHours=" + creditHours +
+                ", prerequisites=" + prerequisites +
+                ", schedule='" + schedule + '\'' +
+                ", instructor='" + instructor + '\'' +
+                ", maxCapacity=" + maxCapacity +
+                ", enrolledStudents=" + enrolledStudents +
+                '}';
     }
 }
