@@ -15,6 +15,7 @@ public class Course {
     private List<Integer> prerequisites;
     private String schedule;
     private String instructor;
+    private int department = -1;
     private int maxCapacity = 30;
     private List<String> enrolledStudents;
     private DatabaseManager db = new DatabaseManager();
@@ -30,10 +31,10 @@ public class Course {
         this.schedule = schedule;
         this.instructor = instructor;
         this.maxCapacity = maxCapacity;
-        this.enrolledStudents = new ArrayList<>(); // Initialize the enrolledStudents list
+        this.enrolledStudents = new ArrayList<>();
     }
 
-    public Course(int courseId, String title, String description, int creditHours, List<Integer> prerequisites, String schedule, String instructor, int maxCapacity, List<String> enrolledStudents) {
+    public Course(int courseId, String title, String description, int creditHours, List<Integer> prerequisites, String schedule, String instructor, int maxCapacity, List<String> enrolledStudents, int department) {
         this.courseId = courseId;
         this.title = title;
         this.description = description;
@@ -43,6 +44,7 @@ public class Course {
         this.instructor = instructor;
         this.maxCapacity = maxCapacity;
         this.enrolledStudents = enrolledStudents;
+        this.department = department;
     }
 
     public boolean addStudent(Student student) {
@@ -190,6 +192,14 @@ public class Course {
 
     public void setMaxCapacity(int maxCapacity) {
         this.maxCapacity = maxCapacity;
+    }
+
+    public int getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(int department) {
+        this.department = department;
     }
 
     @Override

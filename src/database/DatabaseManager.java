@@ -2,6 +2,7 @@ package database;
 
 import users.*;
 import academics.*;
+import system.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -438,6 +439,114 @@ public class DatabaseManager {
         }
     }
 
+    public boolean updateFaculty(Faculty faculty) {
+        String userSql = "UPDATE users SET username = ?, password = ?, name = ?, email = ?, contact_info = ?, user_type = ? WHERE user_id = ?";
+        String facultySql = "UPDATE faculty SET department_id = ?, expertise = ? WHERE faculty_id = ?";
+
+        try (var conn = connect()) {
+            conn.setAutoCommit(false);
+
+            try (var userPstmt = conn.prepareStatement(userSql)) {
+                userPstmt.setString(1, faculty.getUsername());
+                userPstmt.setString(2, faculty.getPassword());
+                userPstmt.setString(3, faculty.getName());
+                userPstmt.setString(4, faculty.getEmail());
+                userPstmt.setString(5, faculty.getContactInfo());
+                userPstmt.setString(6, faculty.getUserType().getDisplayName());
+                userPstmt.setString(7, faculty.getUserId());
+                userPstmt.executeUpdate();
+            }
+
+            try (var facultyPstmt = conn.prepareStatement(facultySql)) {
+                facultyPstmt.setInt(1, faculty.getDepartment());
+                facultyPstmt.setString(2, faculty.getExpertise());
+                facultyPstmt.setString(3, faculty.getFacultyId());
+                facultyPstmt.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error updating faculty: " + e.getMessage());
+            try (var conn = connect()) {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                System.err.println("Rollback error: " + rollbackEx.getMessage());
+            }
+            return false;
+        }
+    }
+
+    public boolean deleteFaculty(String facultyId) {
+        String sql = "DELETE FROM users WHERE user_id = (SELECT user_id FROM faculty WHERE faculty_id = ?)";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, facultyId);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                return true;
+            } else {
+                System.err.println("No faculty found with faculty_id: " + facultyId);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error deleting faculty: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public Faculty getFaculty(String facultyId) {
+        String sql = "SELECT f.faculty_id, f.user_id, f.department_id, f.expertise, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM faculty f JOIN users u ON f.user_id = u.user_id " +
+                "WHERE f.faculty_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, facultyId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    ArrayList<Integer> coursesTeaching = getCoursesTeaching(facultyId); // Implement this if needed
+
+                    return new Faculty(
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("faculty_id"),
+                            rs.getInt("department_id"),
+                            rs.getString("expertise"),
+                            coursesTeaching
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving faculty: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public ArrayList<Integer> getCoursesTeaching(String facultyId) {
+        String sql = "SELECT course_id FROM courses WHERE instructor_id = ?";
+        ArrayList<Integer> coursesTeaching = new ArrayList<>();
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, facultyId);
+            try (var rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    coursesTeaching.add(rs.getInt("course_id"));
+                }
+            }
+            return coursesTeaching;
+
+        } catch (SQLException e) {
+            System.err.println("Error retrieving courses Teaching : " + e.getMessage());
+        }
+        return null;
+    }
+
     // ----------------------------------------------------------------------------- //
     // SystemAdmin Management
     // ----------------------------------------------------------------------------- //
@@ -483,8 +592,8 @@ public class DatabaseManager {
     // Course Management
     // ----------------------------------------------------------------------------- //
     public boolean addCourse(Course course) {
-        String sql = "INSERT INTO courses(course_id, title, description, credit_hours,instructor_id, max_capacity, schedule)"
-                + "VALUES(?,?,?,?,?,?,?);";
+        String sql = "INSERT INTO courses(course_id, title, description, credit_hours,instructor_id, max_capacity, schedule, department_id)"
+                + "VALUES(?,?,?,?,?,?,?,?);";
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, course.getCourseId());
@@ -494,6 +603,7 @@ public class DatabaseManager {
             pstmt.setString(5, course.getInstructor());
             pstmt.setInt(6, course.getMaxCapacity());
             pstmt.setString(7, course.getSchedule());
+            pstmt.setInt(8, course.getDepartment());
             pstmt.executeUpdate();
 
             addPrerequisites(course.getCourseId(), course.getPrerequisites());
@@ -522,12 +632,13 @@ public class DatabaseManager {
                     String schedule = rs.getString("schedule");
                     String instructor_id = rs.getString("instructor_id");
                     int max_capacity = rs.getInt("max_capacity");
+                    int department = rs.getInt("department_id");
 
                     List<Integer> prerequisites = getCoursePrerequisites(courseId);
                     List<String> enrolledStudents = getStudentsInCourse(courseId);
 
                     return new Course(course_id, title, description, credit_hours,
-                            prerequisites, schedule, instructor_id, max_capacity, enrolledStudents);
+                            prerequisites, schedule, instructor_id, max_capacity, enrolledStudents, department);
                 }
             }
         } catch (SQLException e) {
@@ -539,7 +650,7 @@ public class DatabaseManager {
 
 
     public boolean updateCourse(Course course) {
-        String sql = "UPDATE courses SET title = ?, description = ?, credit_hours = ?, instructor_id = ?, max_capacity = ?, schedule = ? WHERE course_id = ?;";
+        String sql = "UPDATE courses SET title = ?, description = ?, credit_hours = ?, instructor_id = ?, max_capacity = ?, schedule = ?, department_id = ? WHERE course_id = ?;";
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, course.getTitle());
@@ -548,7 +659,8 @@ public class DatabaseManager {
             pstmt.setString(4, course.getInstructor());
             pstmt.setInt(5, course.getMaxCapacity());
             pstmt.setString(6, course.getSchedule());
-            pstmt.setInt(7, course.getCourseId());
+            pstmt.setInt(7, course.getDepartment());
+            pstmt.setInt(8, course.getCourseId());
             int affectedRows = pstmt.executeUpdate();
 
             return affectedRows > 0;
@@ -600,6 +712,7 @@ public class DatabaseManager {
                 courseData.add(rs.getString("instructor_id"));
                 courseData.add(rs.getInt("max_capacity"));
                 courseData.add(rs.getString("schedule"));
+                courseData.add(rs.getInt("department_id"));
                 coursesList.add(courseData);
             }
         } catch (SQLException e) {
@@ -786,6 +899,90 @@ public class DatabaseManager {
 
         return studentIds;
     }
+
+    // ----------------------------------------------------------------------------- //
+    // department Management
+    // ----------------------------------------------------------------------------- //
+
+    public boolean createDepartment(Department department) {
+        String sql = "INSERT INTO departments (name) VALUES (?)";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, department.getName());
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error creating department: " + e.getMessage());
+            return false;
+        }
+    }
+
+//    public Department getDepartment(int departmentId) {
+//        String sql = "SELECT * FROM departments WHERE department_id = ?";
+//
+//        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+//            pstmt.setInt(1, departmentId);
+//            try (var rs = pstmt.executeQuery()) {
+//                if (rs.next()) {
+//                    return new Department(
+//                            rs.getInt("department_id"),
+//                            rs.getString("name")
+//                    );
+//                }
+//            }
+//        } catch (SQLException e) {
+//            System.err.println("Error retrieving department: " + e.getMessage());
+//        }
+//        return null;
+//    }
+//
+//    public Department getDepartment(String name) {
+//        String sql = "SELECT * FROM departments WHERE name = ?";
+//
+//        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+//            pstmt.setString(1, name);
+//            try (var rs = pstmt.executeQuery()) {
+//                if (rs.next()) {
+//                    return new Department(
+//                            rs.getInt("department_id"),
+//                            rs.getString("name")
+//                    );
+//                }
+//            }
+//        } catch (SQLException e) {
+//            System.err.println("Error retrieving department by name: " + e.getMessage());
+//        }
+//        return null;
+//    }
+
+    public boolean updateDepartment(Department department) {
+        String sql = "UPDATE departments SET name = ? WHERE department_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, department.getName());
+            pstmt.setInt(2, department.getDepartmentId());
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating department: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean deleteDepartment(int departmentId) {
+        String sql = "DELETE FROM departments WHERE department_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting department: " + e.getMessage());
+            return false;
+        }
+    }
+
+
 
 }
 
