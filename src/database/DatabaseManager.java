@@ -1,4 +1,8 @@
+package database;
+
 import users.*;
+import academics.*;
+import system.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -298,6 +302,120 @@ public class DatabaseManager {
         }
     }
 
+    public Student getStudent(String studentId) {
+        String sql = "SELECT s.student_id, s.admissionDate, s.academicStatus, s.user_id, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM students s JOIN users u ON s.user_id = u.user_id " +
+                "WHERE s.student_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, studentId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    List<Integer> enrolledCourses = getEnrolledCourses(studentId);
+                    return new Student(
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("student_id"),
+                            rs.getString("admissionDate"),
+                            rs.getString("academicStatus"),
+                            enrolledCourses
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving student: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public ArrayList<String[]> getAllStudents() {
+        String sql = "SELECT student_id, admissionDate, academicStatus, user_id FROM students";
+
+        ArrayList<String[]> students = new ArrayList<>();
+
+        try (var conn = connect();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String studentId = rs.getString("student_id");
+                String admissionDate = rs.getString("admissionDate");
+                String academicStatus = rs.getString("academicStatus");
+                String userId = rs.getString("user_id");
+
+                // Create an array for each student and add to the ArrayList
+                String[] student = {studentId, admissionDate, academicStatus, userId};
+                students.add(student);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting students: " + e.getMessage());
+            return new ArrayList<>();
+        }
+        return students;
+    }
+
+    public boolean updateStudent(Student student) {
+        String userSql = "UPDATE users SET username = ?, password = ?, name = ?, email = ?, contact_info = ?, user_type = ? WHERE user_id = ?";
+        String studentSql = "UPDATE students SET admissionDate = ?, academicStatus = ? WHERE student_id = ?";
+
+        try (var conn = connect()) {
+            conn.setAutoCommit(false); // Start transaction
+
+            // Update users table
+            try (var userPstmt = conn.prepareStatement(userSql)) {
+                userPstmt.setString(1, student.getUsername());
+                userPstmt.setString(2, student.getPassword());
+                userPstmt.setString(3, student.getName());
+                userPstmt.setString(4, student.getEmail());
+                userPstmt.setString(5, student.getContactInfo());
+                userPstmt.setString(6, student.getUserType().getDisplayName());
+                userPstmt.setString(7, student.getUserId());
+                userPstmt.executeUpdate();
+            }
+
+            // Update students table
+            try (var studentPstmt = conn.prepareStatement(studentSql)) {
+                studentPstmt.setString(1, student.getAdmissionDate());
+                studentPstmt.setString(2, student.getacademicStatus());
+                studentPstmt.setString(3, student.getStudentId());
+                studentPstmt.executeUpdate();
+            }
+
+            conn.commit(); // Commit transaction
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error updating student: " + e.getMessage());
+            try (var conn = connect()) {
+                conn.rollback(); // Rollback on error
+            } catch (SQLException rollbackEx) {
+                System.err.println("Error during rollback: " + rollbackEx.getMessage());
+            }
+            return false;
+        }
+    }
+
+    public boolean deleteStudent(String studentId) {
+        String sql = "DELETE FROM users WHERE user_id = (SELECT user_id FROM students WHERE student_id = ?)";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, studentId);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                return true;
+            } else {
+                System.err.println("No student found with student_id: " + studentId);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error deleting student: " + e.getMessage());
+            return false;
+        }
+    }
     // ----------------------------------------------------------------------------- //
     // Faculty Management
     // ----------------------------------------------------------------------------- //
@@ -319,6 +437,114 @@ public class DatabaseManager {
             System.err.println("Error creating faculty: " + e.getMessage());
             return false;
         }
+    }
+
+    public boolean updateFaculty(Faculty faculty) {
+        String userSql = "UPDATE users SET username = ?, password = ?, name = ?, email = ?, contact_info = ?, user_type = ? WHERE user_id = ?";
+        String facultySql = "UPDATE faculty SET department_id = ?, expertise = ? WHERE faculty_id = ?";
+
+        try (var conn = connect()) {
+            conn.setAutoCommit(false);
+
+            try (var userPstmt = conn.prepareStatement(userSql)) {
+                userPstmt.setString(1, faculty.getUsername());
+                userPstmt.setString(2, faculty.getPassword());
+                userPstmt.setString(3, faculty.getName());
+                userPstmt.setString(4, faculty.getEmail());
+                userPstmt.setString(5, faculty.getContactInfo());
+                userPstmt.setString(6, faculty.getUserType().getDisplayName());
+                userPstmt.setString(7, faculty.getUserId());
+                userPstmt.executeUpdate();
+            }
+
+            try (var facultyPstmt = conn.prepareStatement(facultySql)) {
+                facultyPstmt.setInt(1, faculty.getDepartment());
+                facultyPstmt.setString(2, faculty.getExpertise());
+                facultyPstmt.setString(3, faculty.getFacultyId());
+                facultyPstmt.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error updating faculty: " + e.getMessage());
+            try (var conn = connect()) {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                System.err.println("Rollback error: " + rollbackEx.getMessage());
+            }
+            return false;
+        }
+    }
+
+    public boolean deleteFaculty(String facultyId) {
+        String sql = "DELETE FROM users WHERE user_id = (SELECT user_id FROM faculty WHERE faculty_id = ?)";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, facultyId);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                return true;
+            } else {
+                System.err.println("No faculty found with faculty_id: " + facultyId);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error deleting faculty: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public Faculty getFaculty(String facultyId) {
+        String sql = "SELECT f.faculty_id, f.user_id, f.department_id, f.expertise, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM faculty f JOIN users u ON f.user_id = u.user_id " +
+                "WHERE f.faculty_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, facultyId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    ArrayList<Integer> coursesTeaching = getCoursesTeaching(facultyId); // Implement this if needed
+
+                    return new Faculty(
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("faculty_id"),
+                            rs.getInt("department_id"),
+                            rs.getString("expertise"),
+                            coursesTeaching
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving faculty: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public ArrayList<Integer> getCoursesTeaching(String facultyId) {
+        String sql = "SELECT course_id FROM courses WHERE instructor_id = ?";
+        ArrayList<Integer> coursesTeaching = new ArrayList<>();
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, facultyId);
+            try (var rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    coursesTeaching.add(rs.getInt("course_id"));
+                }
+            }
+            return coursesTeaching;
+
+        } catch (SQLException e) {
+            System.err.println("Error retrieving courses Teaching : " + e.getMessage());
+        }
+        return null;
     }
 
     // ----------------------------------------------------------------------------- //
@@ -366,8 +592,8 @@ public class DatabaseManager {
     // Course Management
     // ----------------------------------------------------------------------------- //
     public boolean addCourse(Course course) {
-        String sql = "INSERT INTO courses(course_id, title, description, credit_hours,instructor_id, max_capacity, schedule)"
-                + "VALUES(?,?,?,?,?,?,?);";
+        String sql = "INSERT INTO courses(course_id, title, description, credit_hours,instructor_id, max_capacity, schedule, department_id)"
+                + "VALUES(?,?,?,?,?,?,?,?);";
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, course.getCourseId());
@@ -377,8 +603,10 @@ public class DatabaseManager {
             pstmt.setString(5, course.getInstructor());
             pstmt.setInt(6, course.getMaxCapacity());
             pstmt.setString(7, course.getSchedule());
+            pstmt.setInt(8, course.getDepartment());
             pstmt.executeUpdate();
 
+            addPrerequisites(course.getCourseId(), course.getPrerequisites());
             return true;
 
         } catch (SQLException e) {
@@ -387,8 +615,42 @@ public class DatabaseManager {
         }
     }
 
+    public Course getCourse(int courseId) {
+        String courseData = "SELECT course_id, title, description, credit_hours, " +
+                "instructor_id, max_capacity, schedule " +
+                "FROM courses " +
+                "WHERE course_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(courseData)) {
+            pstmt.setInt(1, courseId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int course_id = rs.getInt("course_id");
+                    String title = rs.getString("title");
+                    String description = rs.getString("description");
+                    int credit_hours = rs.getInt("credit_hours");
+                    String schedule = rs.getString("schedule");
+                    String instructor_id = rs.getString("instructor_id");
+                    int max_capacity = rs.getInt("max_capacity");
+                    int department = rs.getInt("department_id");
+
+                    List<Integer> prerequisites = getCoursePrerequisites(courseId);
+                    List<String> enrolledStudents = getStudentsInCourse(courseId);
+
+                    return new Course(course_id, title, description, credit_hours,
+                            prerequisites, schedule, instructor_id, max_capacity, enrolledStudents, department);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving course data: " + e.getMessage());
+        }
+
+        return null; // return null if not found or error occurs
+    }
+
+
     public boolean updateCourse(Course course) {
-        String sql = "UPDATE courses SET title = ?, description = ?, credit_hours = ?, instructor_id = ?, max_capacity = ?, schedule = ? WHERE course_id = ?;";
+        String sql = "UPDATE courses SET title = ?, description = ?, credit_hours = ?, instructor_id = ?, max_capacity = ?, schedule = ?, department_id = ? WHERE course_id = ?;";
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, course.getTitle());
@@ -397,7 +659,8 @@ public class DatabaseManager {
             pstmt.setString(4, course.getInstructor());
             pstmt.setInt(5, course.getMaxCapacity());
             pstmt.setString(6, course.getSchedule());
-            pstmt.setInt(7, course.getCourseId());
+            pstmt.setInt(7, course.getDepartment());
+            pstmt.setInt(8, course.getCourseId());
             int affectedRows = pstmt.executeUpdate();
 
             return affectedRows > 0;
@@ -449,6 +712,7 @@ public class DatabaseManager {
                 courseData.add(rs.getString("instructor_id"));
                 courseData.add(rs.getInt("max_capacity"));
                 courseData.add(rs.getString("schedule"));
+                courseData.add(rs.getInt("department_id"));
                 coursesList.add(courseData);
             }
         } catch (SQLException e) {
@@ -458,7 +722,7 @@ public class DatabaseManager {
         return coursesList;
     }
 
-    public boolean addPrerequisites(int courseId, ArrayList<Integer> prerequisites) {
+    public boolean addPrerequisites(int courseId, List<Integer> prerequisites) {
         String sql = "INSERT INTO prerequisites(prerequisit_course, course_id) VALUES(?,?);";
 
         for (int i =0; i < prerequisites.size(); i++) {
@@ -496,7 +760,7 @@ public class DatabaseManager {
      * @return ArrayList<Integer> containing the IDs of all prerequisite courses
      *         Returns an empty ArrayList if the course has no prerequisites or if an error occurs
      */
-    public ArrayList<Integer> getCoursePrerequisites(int courseId) {
+    public List<Integer> getCoursePrerequisites(int courseId) {
         String sql = "SELECT prerequisit_course FROM prerequisites WHERE course_id = ?;";
         ArrayList<Integer> prerequisites = new ArrayList<>();
 
@@ -514,13 +778,18 @@ public class DatabaseManager {
         return prerequisites;
     }
 
+
+    // ----------------------------------------------------------------------------- //
+    // enrollment Management
+    // ----------------------------------------------------------------------------- //
+
     public boolean enrollStudent(Enrollment enrollment) {
         String sql = "INSERT INTO enrollments(student_id, course_id, enrollment_date, status)" +
                 "VALUES(?,?,?,?)";
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, enrollment.getStudent());
-            pstmt.setInt(2, enrollment.getCourse());
+            pstmt.setString(1, enrollment.getStudent().getStudentId());
+            pstmt.setInt(2, enrollment.getCourse().getCourseId());
             pstmt.setString(3, enrollment.getEnrollmentDate());
             pstmt.setString(4, enrollment.getStatus());
             pstmt.executeUpdate();
@@ -530,6 +799,57 @@ public class DatabaseManager {
             System.err.println("Error enrolling student: " + e.getMessage());
             return false;
         }
+    }
+
+    public List<Integer> getEnrolledCourses(String studentId) {
+        String sql = "SELECT course_id FROM enrollments WHERE student_id = ?";
+        List<Integer> enrolledCourses = new ArrayList<>();
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, studentId);
+            try (var rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    enrolledCourses.add(rs.getInt("course_id"));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving enrolled courses: " + e.getMessage());
+        }
+
+        return enrolledCourses;
+    }
+
+    public Enrollment getEnrollment(String studentId, int courseId) {
+        String sql = "SELECT enrollment_date, grade, status FROM enrollments WHERE student_id = ? AND course_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, studentId);
+            pstmt.setInt(2, courseId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    // Fetch Student and Course objects
+                    Student student = getStudent(studentId);
+                    Course course = getCourse(courseId);
+
+                    // Check if both Student and Course were found
+                    if (student != null && course != null) {
+                        return new Enrollment(
+                                student,
+                                course,
+                                rs.getString("enrollment_date"),
+                                rs.getInt("grade"),
+                                rs.getString("status")
+                        );
+                    } else {
+                        System.err.println("Student or Course not found for enrollment");
+                        return null;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving enrollment: " + e.getMessage());
+        }
+        return null;
     }
 
     public boolean removeStudentFromCourse(String studentId, int courseId) {
@@ -552,8 +872,8 @@ public class DatabaseManager {
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, enrollment.getGrade());
             pstmt.setString(2, enrollment.getStatus());
-            pstmt.setString(3, enrollment.getStudent());
-            pstmt.setInt(4, enrollment.getCourse());
+            pstmt.setString(3, enrollment.getStudent().getStudentId());
+            pstmt.setInt(4, enrollment.getCourse().getCourseId());
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
@@ -579,6 +899,90 @@ public class DatabaseManager {
 
         return studentIds;
     }
+
+    // ----------------------------------------------------------------------------- //
+    // department Management
+    // ----------------------------------------------------------------------------- //
+
+    public boolean createDepartment(Department department) {
+        String sql = "INSERT INTO departments (name) VALUES (?)";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, department.getName());
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error creating department: " + e.getMessage());
+            return false;
+        }
+    }
+
+//    public Department getDepartment(int departmentId) {
+//        String sql = "SELECT * FROM departments WHERE department_id = ?";
+//
+//        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+//            pstmt.setInt(1, departmentId);
+//            try (var rs = pstmt.executeQuery()) {
+//                if (rs.next()) {
+//                    return new Department(
+//                            rs.getInt("department_id"),
+//                            rs.getString("name")
+//                    );
+//                }
+//            }
+//        } catch (SQLException e) {
+//            System.err.println("Error retrieving department: " + e.getMessage());
+//        }
+//        return null;
+//    }
+//
+//    public Department getDepartment(String name) {
+//        String sql = "SELECT * FROM departments WHERE name = ?";
+//
+//        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+//            pstmt.setString(1, name);
+//            try (var rs = pstmt.executeQuery()) {
+//                if (rs.next()) {
+//                    return new Department(
+//                            rs.getInt("department_id"),
+//                            rs.getString("name")
+//                    );
+//                }
+//            }
+//        } catch (SQLException e) {
+//            System.err.println("Error retrieving department by name: " + e.getMessage());
+//        }
+//        return null;
+//    }
+
+    public boolean updateDepartment(Department department) {
+        String sql = "UPDATE departments SET name = ? WHERE department_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, department.getName());
+            pstmt.setInt(2, department.getDepartmentId());
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating department: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean deleteDepartment(int departmentId) {
+        String sql = "DELETE FROM departments WHERE department_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting department: " + e.getMessage());
+            return false;
+        }
+    }
+
+
 
 }
 

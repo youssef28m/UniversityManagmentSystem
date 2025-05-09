@@ -1,9 +1,12 @@
 package users;
 
+import database.DatabaseManager;
+
 public class SystemAdmin extends User {
 
     private String adminId;
     private String securityLevel;
+    private DatabaseManager db = new DatabaseManager();
 
     public SystemAdmin(String userId, String username, String password, String name,
                        String email, String contactInfo, String adminId,

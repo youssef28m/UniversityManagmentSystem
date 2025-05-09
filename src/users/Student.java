@@ -1,15 +1,20 @@
 package users;
 
+import database.DatabaseManager;
+import academics.*;
 import java.util.ArrayList;
+import java.util.List;
+import java.time.LocalDate;
 
 public class Student extends User {
     private String studentId;
     private String admissionDate;
     private AcademicStatus academicStatus = AcademicStatus.ACTIVE;
-    private ArrayList<Integer> enrolledCourses = new ArrayList<>();
+    private List<Integer> enrolledCourses = new ArrayList<>();
+    private DatabaseManager db = new DatabaseManager();
 
     public Student(String userId, String username, String password, String name, String email, String contactInfo,
-                   String studentId, String admissionDate, String academicStatus, ArrayList<Integer> enrolledCourses) {
+                   String studentId, String admissionDate, String academicStatus, List<Integer> enrolledCourses) {
         super(userId, username, password, name, email, contactInfo);
         this.studentId = studentId;
         this.admissionDate = admissionDate;
@@ -28,9 +33,8 @@ public class Student extends User {
     }
 
     public enum AcademicStatus {
-
         ACTIVE("Active"),
-        ON_PROBATION("On Probation"),
+        PROBATION("Probation"),
         GRADUATED("Graduated");
 
         private final String displayName;
@@ -58,8 +62,156 @@ public class Student extends User {
     }
 
 
+    public double gradeToGPA(double grade) {
+        if (grade >= 90) return 4.0;
+        else if (grade >= 85) return 3.7;
+        else if (grade >= 80) return 3.3;
+        else if (grade >= 75) return 3.0;
+        else if (grade >= 70) return 2.7;
+        else if (grade >= 65) return 2.3;
+        else if (grade >= 60) return 2.0;
+        else if (grade >= 55) return 1.7;
+        else if (grade >= 50) return 1.0;
+        else return 0.0;
+    }
+
+    public boolean registerForCourse(Course course) {
+        if (course == null) {
+            System.out.println("Registration failed: Invalid course.");
+            return false;
+        }
+
+        if (course.getAvailableSeats() <= 0) {
+            System.out.println("Registration failed: No available seats in " + course.getTitle());
+            return false;
+        }
+
+        List<Integer> completedCourses = getCompletedCourses();
+        if (!course.isPrerequisiteSatisfied(completedCourses)) {
+            System.out.println("Registration failed: Prerequisites not satisfied.");
+            return false;
+        }
+
+        List<Integer> currentEnrollments = db.getEnrolledCourses(studentId);
+        if (currentEnrollments.contains(course.getCourseId())) {
+            System.out.println("You are already registered in " + course.getTitle() + ".");
+            return false;
+        }
+
+        // Create enrollment and add to database
+        Enrollment enrollment = new Enrollment(this, course, "active");
+        boolean success = db.enrollStudent(enrollment);
+        if (success) {
+            try {
+                course.addStudent(this); // Update course's student list
+            } catch (Exception e) {
+                System.err.println("Error adding student to course : " + e.getMessage());
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public List<Integer> getCompletedCourses() {
+
+        List<Integer> completedCourses = new ArrayList<>();
+        for (int courseId : enrolledCourses) {
+            Enrollment enrollment = db.getEnrollment(studentId, courseId);
+            if (enrollment != null) {
+                if (enrollment.getStatus().equals("completed")) {
+                    completedCourses.add(courseId);
+                }
+            }
+        }
+
+        return completedCourses;
+    }
+
+    public boolean dropCourse(Course course) {
+        if (course == null) {
+            System.out.println("Drop failed: Invalid course.");
+            return false;
+        }
+
+        List<Integer> currentEnrollments = db.getEnrolledCourses(studentId);
+        if (!currentEnrollments.contains(course.getCourseId())) {
+            System.out.println("You are not registered in " + course.getTitle() + ".");
+            return false;
+        }
+
+        boolean success = db.removeStudentFromCourse(studentId, course.getCourseId());
+        if (success) {
+            try {
+                course.removeStudent(this); // Update course's student list
+            } catch (Exception e) {
+                System.out.println("error removing student from course :" + e.getMessage());
+            }
+            return true;
+        } else {
+            System.out.println("Drop failed: Database error.");
+            return false;
+        }
+    }
+
+    public void viewGrades() {
+        List<Integer> courseIds = db.getEnrolledCourses(studentId);
+        if (courseIds.isEmpty()) {
+            System.out.println("You are not enrolled in any courses.");
+            return;
+        }
+
+        System.out.println("Grades for " + getName() + ":");
+        for (int courseId : courseIds) {
+            Course course = db.getCourse(courseId);
+            if (course != null) {
+                Enrollment enrollment = db.getEnrollment(studentId, courseId);
+                String grade = (enrollment != null && enrollment.getGrade() > 0)
+                        ? String.valueOf(enrollment.getGrade())
+                        : "N/A";
+                System.out.println(course.getTitle() + ": " + grade);
+            }
+        }
+    }
+
+    public void viewEnrolledCourses() {
+        List<Integer> courseIds = db.getEnrolledCourses(studentId);
+        if (courseIds.isEmpty()) {
+            System.out.println("You are not enrolled in any courses.");
+            return;
+        }
+
+        System.out.println("Enrolled courses for " + getName() + ":");
+        for (int courseId : courseIds) {
+            Course course = db.getCourse(courseId);
+            if (course != null) {
+                System.out.println(course.getTitle());
+            }
+        }
+    }
+
+    public double calculateGPA() {
+        List<Integer> courseIds = db.getEnrolledCourses(studentId);
+        if (courseIds.isEmpty()) {
+            return 0.0;
+        }
+
+        double totalPoints = 0.0;
+        int validCourses = 0;
+        for (int courseId : courseIds) {
+            Enrollment enrollment = db.getEnrollment(studentId, courseId);
+            if (enrollment != null && enrollment.getGrade() > 0) { // Only count graded courses
+                totalPoints += gradeToGPA(enrollment.getGrade());
+                validCourses++;
+            }
+        }
+
+        double gpa = validCourses > 0 ? totalPoints / validCourses : 0.0;
+        return Math.round(gpa * 100.0) / 100.0; // Round to two decimal places
+    }
+
     //----------------------------------------------------------//
-    // geters and setters
+    // Getters and setters
     //----------------------------------------------------------//
     public String getStudentId() {
         return studentId;
@@ -85,90 +237,11 @@ public class Student extends User {
         this.academicStatus = academicStatus;
     }
 
-    public ArrayList<Integer> getEnrolledCourses() {
-        return enrolledCourses;
+    public List<Integer> getEnrolledCourses() {
+        return db.getEnrolledCourses(studentId); // Fetch from database
     }
 
-    public void setEnrolledCourses(ArrayList<Integer> enrolledCourses) {
+    public void setEnrolledCourses(List<Integer> enrolledCourses) {
         this.enrolledCourses = enrolledCourses;
     }
-    public  double gradeToGPA(double grade) {
-        if (grade >= 90) return 4.0;
-        else if (grade >= 85) return 3.7;
-        else if (grade >= 80) return 3.3;
-        else if (grade >= 75) return 3.0;
-        else if (grade >= 70) return 2.7;
-        else if (grade >= 65) return 2.3;
-        else if (grade >= 60) return 2.0;
-        else if (grade >= 55) return 1.7;
-        else if (grade >= 50) return 1.0;
-        else return 0.0;
-    }
-
-          
-    public void registerForCourse(Course course) {
-        if (course.getAvailableSeats() <= 0) {
-            System.out.println("Registration failed: No available seats in " + course.getTitle());
-            return;
-        }
-        if (!course.isPrerequisiteSatisfied(this)) {
-            System.out.println("Registration failed: Prerequisites not satisfied.");
-            return;
-        }
-        if (enrolledCourses.contains(course)) {
-            System.out.println("You are already registered in this course.");
-            return;
-        }
-        enrolledCourses.add(course);
-        course.addStudent(this);
-        System.out.println("Successfully registered for " + course.getTitle());
-    }
-    public void dropCourse(Course course) {
-        if (!enrolledCourses.contains(course)) {
-            System.out.println("You are not registered in this course.");
-            return;
-        }
-        enrolledCourses.remove(course);
-        course.removeStudent(this);
-        System.out.println("Successfully dropped " + course.getTitle());
-    }    
-    public void viewGrades() {
-        if (enrolledCourses.isEmpty()) {
-            System.out.println("You are not enrolled in any courses.");
-            return;
-        }
-        System.out.println("Grades for " + getName() + ":");
-        for (Course course : enrolledCourses) {
-            Enrollment enrollment = course.getEnrollmentForStudent(this);
-            String grade = (enrollment != null) ? enrollment.getGrade() : "N/A";
-            System.out.println(course.getTitle() + ": " + grade);
-        }
-    }
-    public void viewEnrolledCourses() {
-        if (enrolledCourses.isEmpty()) {
-            System.out.println("You are not enrolled in any courses.");
-        }
-        System.out.println("Enrolled courses for " + getName() + ":");
-        for (Course course : enrolledCourses) {
-            System.out.println(course.getTitle());
-        }
-    } 
-    public double calculateGPA() {
-        double totalPoints = 0.0;
-        int totalCourses = enrolledCourses.size();
-        if (totalCourses == 0) return 0.0;
-
-        for (int courseId : enrolledCourses) {
-            Course course = Course.getCourseById(courseId);
-            if (course != null) {
-                Enrollment enrollment = course.getEnrollmentForStudent(this);
-                if (enrollment != null) {
-                    double grade = enrollment.getGrade();
-                    totalPoints += gradeToGPA(grade);
-                }
-            }
-        }
-        return totalPoints / totalCourses;
-    }     
-    
 }
