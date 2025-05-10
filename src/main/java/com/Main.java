@@ -1,15 +1,12 @@
-import academics.Course;
-import users.*;
-import database.DatabaseManager;
+package com;
 
-import java.sql.SQLException;
-import java.util.List;
+import com.database.DatabaseManager;
 
 
 public class Main {
     public static void main(String[] args) {
         DatabaseManager db = new DatabaseManager();
-
+        db.createTables();
 
     }
 }

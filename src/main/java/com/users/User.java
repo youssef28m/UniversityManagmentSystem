@@ -1,4 +1,4 @@
-package users;
+package com.users;
 
 public abstract class User {
     private String userId;
