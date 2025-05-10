@@ -1,4 +1,4 @@
-package users;
+package com.users;
 
 public class AdminStaff extends User {
 

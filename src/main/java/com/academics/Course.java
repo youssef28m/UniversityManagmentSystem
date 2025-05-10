@@ -1,8 +1,7 @@
-package academics;
-import database.DatabaseManager;
-import users.Student;
+package com.academics;
+import com.database.DatabaseManager;
+import com.users.Student;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +17,7 @@ public class Course {
     private int department = -1;
     private int maxCapacity = 30;
     private List<String> enrolledStudents;
-    private DatabaseManager db = new DatabaseManager();
+    public DatabaseManager db = new DatabaseManager();
 
     // Constructor
     public Course(int courseId, String title, String description, int creditHours,

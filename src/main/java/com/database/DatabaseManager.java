@@ -1,8 +1,8 @@
-package database;
+package com.database;
 
-import users.*;
-import academics.*;
-import system.*;
+import com.academics.*;
+import com.system.*;
+import com.users.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;

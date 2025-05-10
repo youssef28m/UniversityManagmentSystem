@@ -1,9 +1,7 @@
-package users;
-import academics.*;
-import database.DatabaseManager;
+package com.users;
+import com.database.DatabaseManager;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class Faculty extends User {
 
@@ -14,7 +12,7 @@ public class Faculty extends User {
     private DatabaseManager db = new DatabaseManager();
 
 
-    public Faculty(String userId, String username, String password, String name, String email, String contactInfo, String facultyId,  String expertise) {
+    public Faculty(String userId, String username, String password, String name, String email, String contactInfo, String facultyId, String expertise) {
         super(userId, username, password, name, email, contactInfo);
         this.facultyId = facultyId;
         this.expertise = expertise;
@@ -70,7 +68,7 @@ public class Faculty extends User {
 //            System.out.println("You do not teach this course.");
 //            return;
 //        }
-//        Enrollment enrollment = course.getEnrollmentForStudent(student);
+//        Enrollment enrollment = course.getEnrolledStudents(student);
 //        if (enrollment == null) {
 //            System.out.println("The student is not enrolled in this course.");
 //            return;
@@ -78,7 +76,10 @@ public class Faculty extends User {
 //        enrollment.assignGrade(grade);
 //        System.out.println("Grade assigned successfully to " + student.getName() + " in " + course.getTitle());
 //    }
-//    public void manageCourse(Course course) {
+//
+//    public void manageCourse(Course course, String operation, String attribute) {
+//
+//
 //        if (!coursesTeaching.contains(course)) {
 //            System.out.println("You do not have permission to manage this course.");
 //            return;
@@ -88,29 +89,31 @@ public class Faculty extends User {
 //        System.out.println("Managing course: " + course.getTitle());
 //        // Example: course.setTitle("New Title");
 //    }
+//
 //    private String officeHours;
 //
-//public void setOfficeHours(String officeHours) {
-//    this.officeHours = officeHours;
-//    System.out.println("Office hours updated to: " + officeHours);
-//}
-//
-//public String getOfficeHours() {
-//    return officeHours;
-//}
-//public void viewStudentRoster(Course course) {
-//    if (!coursesTeaching.contains(course)) {
-//        System.out.println("You are not assigned to this course.");
-//        return;
+//    public void setOfficeHours(String officeHours) {
+//        this.officeHours = officeHours;
+//        System.out.println("Office hours updated to: " + officeHours);
 //    }
 //
-//    List<Student> students = course.getEnrolledStudents();
-//    System.out.println("Students enrolled in " + course.getTitle() + ":");
-//    for (Student student : students) {
-//        System.out.println("- " + student.getName() + " (" + student.getStudentId() + ")");
+//    public String getOfficeHours() {
+//        return officeHours;
 //    }
-//}
-
-
-
+//
+//    public void viewStudentRoster(Course course) {
+//        if (!coursesTeaching.contains(course)) {
+//            System.out.println("You are not assigned to this course.");
+//            return;
+//        }
+//
+//        List<String> students = course.getEnrolledStudents();
+//        System.out.println("Students enrolled in " + course.getTitle() + ":");
+//        for (String studentId : students) {
+//            Student dbStudent = db.getStudent(studentId);
+//            System.out.println("- " + dbStudent.getName() + " (" + dbStudent.getStudentId() + ")");
+//        }
+//
+//
+//    }
 }

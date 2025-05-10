@@ -1,10 +1,11 @@
-package users;
+package com.users;
 
-import database.DatabaseManager;
-import academics.*;
+import com.academics.Course;
+import com.academics.Enrollment;
+import com.database.DatabaseManager;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDate;
 
 public class Student extends User {
     private String studentId;
