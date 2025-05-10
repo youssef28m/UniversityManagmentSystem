@@ -33,6 +33,10 @@ public class Student extends User {
         setUserType(UserType.STUDENT);
     }
 
+    public Student() {
+
+    }
+
     public enum AcademicStatus {
         ACTIVE("Active"),
         PROBATION("Probation"),
@@ -58,8 +62,29 @@ public class Student extends User {
     }
 
     @Override
-    public String updateProfile() {
-        return "";
+    public boolean updateProfile() {
+        // Ensure DatabaseManager is initialized
+        if (db == null) {
+            return false;
+        }
+
+        // Prepare user data for update
+        String[] userData = {getUsername(), getName(), getEmail(), getContactInfo(), UserType.STUDENT.getDisplayName()};
+
+        try {
+            boolean success = db.updateUserProfile(getUserId(), userData);
+
+            if (success) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            // Catch any unexpected exceptions
+            System.out.println("Failed: An error occurred while updating the profile - " + e.getMessage());
+            return false;
+        }
+
     }
 
 
@@ -234,7 +259,7 @@ public class Student extends User {
         return academicStatus.getDisplayName();
     }
 
-    public void setacademicStatus(AcademicStatus academicStatus) {
+    public void setAcademicStatus(AcademicStatus academicStatus) {
         this.academicStatus = academicStatus;
     }
 

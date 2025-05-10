@@ -20,6 +20,8 @@ public class Course {
     public DatabaseManager db = new DatabaseManager();
 
     // Constructor
+    public Course(){}
+
     public Course(int courseId, String title, String description, int creditHours,
                   List<Integer> prerequisites, String schedule, String instructor, int maxCapacity) {
         this.courseId = courseId;
@@ -76,7 +78,6 @@ public class Course {
         }
     }
 
-
     public boolean removeStudent(Student student) {
         if (!enrolledStudents.contains(student.getStudentId())) {
             return false;
@@ -85,7 +86,6 @@ public class Course {
         enrolledStudents.remove(student.getStudentId());
         return true;
     }
-
 
     // Method to check if prerequisites are satisfied
     public boolean isPrerequisiteSatisfied(List<Integer> completedCourseIds) {
@@ -115,7 +115,6 @@ public class Course {
         }
         return maxCapacity - enrolledStudents.size();
     }
-
 
 
     // Getters and Setters

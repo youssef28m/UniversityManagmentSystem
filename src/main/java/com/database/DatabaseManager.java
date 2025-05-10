@@ -45,7 +45,7 @@ public class DatabaseManager {
                 ");";
 
         String departmentTable = "CREATE TABLE IF NOT EXISTS departments (" +
-                "department_id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "department_id INTEGER PRIMARY KEY," +
                 "name TEXT UNIQUE NOT NULL" +
                 ");";
 
@@ -506,7 +506,7 @@ public class DatabaseManager {
             pstmt.setString(1, facultyId);
             try (var rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    ArrayList<Integer> coursesTeaching = getCoursesTeaching(facultyId); // Implement this if needed
+                    ArrayList<Course> coursesTeaching = getCoursesTeaching(facultyId);
 
                     return new Faculty(
                             rs.getString("user_id"),
@@ -528,15 +528,15 @@ public class DatabaseManager {
         return null;
     }
 
-    public ArrayList<Integer> getCoursesTeaching(String facultyId) {
+    public ArrayList<Course> getCoursesTeaching(String facultyId) {
         String sql = "SELECT course_id FROM courses WHERE instructor_id = ?";
-        ArrayList<Integer> coursesTeaching = new ArrayList<>();
+        ArrayList<Course> coursesTeaching = new ArrayList<>();
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, facultyId);
             try (var rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    coursesTeaching.add(rs.getInt("course_id"));
+                    coursesTeaching.add(getCourse(rs.getInt("course_id")));
                 }
             }
             return coursesTeaching;
@@ -586,6 +586,53 @@ public class DatabaseManager {
             System.err.println("Error creating admin staff: " + e.getMessage());
             return false;
         }
+    }
+
+    public boolean updateAdminStaff(AdminStaff staff) {
+        String sql = "UPDATE admin_staff SET department_id = ?, role = ? WHERE staff_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)){
+            pstmt.setInt(1, staff.getDepartmentId());
+            pstmt.setString(2, staff.getRole());
+            pstmt.setString(3, staff.getStaffId());
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error updating admin staff: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public AdminStaff getAdminStaff(String staffId) {
+        String sql = "SELECT u.user_id, u.username, u.password, u.name, u.email, u.contact_info, "
+                + "a.staff_id, a.department_id, a.role "
+                + "FROM users u "
+                + "JOIN admin_staff a ON u.user_id = a.user_id "
+                + "WHERE a.staff_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, staffId);
+
+            var rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String userId = rs.getString("user_id");
+                String username = rs.getString("username");
+                String password = rs.getString("password");
+                String name = rs.getString("name");
+                String email = rs.getString("email");
+                String contactInfo = rs.getString("contact_info");
+                String retrievedStaffId = rs.getString("staff_id");
+                int departmentId = rs.getInt("department_id");
+                String role = rs.getString("role");
+
+                return new AdminStaff(userId, username, password, name, email, contactInfo,
+                        retrievedStaffId, departmentId, role);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving Admin Staff: " + e.getMessage());
+        }
+
+        return null;
     }
 
     // ----------------------------------------------------------------------------- //
@@ -917,43 +964,79 @@ public class DatabaseManager {
         }
     }
 
-//    public Department getDepartment(int departmentId) {
-//        String sql = "SELECT * FROM departments WHERE department_id = ?";
-//
-//        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
-//            pstmt.setInt(1, departmentId);
-//            try (var rs = pstmt.executeQuery()) {
-//                if (rs.next()) {
-//                    return new Department(
-//                            rs.getInt("department_id"),
-//                            rs.getString("name")
-//                    );
-//                }
-//            }
-//        } catch (SQLException e) {
-//            System.err.println("Error retrieving department: " + e.getMessage());
-//        }
-//        return null;
-//    }
-//
-//    public Department getDepartment(String name) {
-//        String sql = "SELECT * FROM departments WHERE name = ?";
-//
-//        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
-//            pstmt.setString(1, name);
-//            try (var rs = pstmt.executeQuery()) {
-//                if (rs.next()) {
-//                    return new Department(
-//                            rs.getInt("department_id"),
-//                            rs.getString("name")
-//                    );
-//                }
-//            }
-//        } catch (SQLException e) {
-//            System.err.println("Error retrieving department by name: " + e.getMessage());
-//        }
-//        return null;
-//    }
+    public Department getDepartment(int departmentId) {
+        String sql = "SELECT * FROM departments WHERE department_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Department(
+                            getDeparmentsCourses(departmentId),
+                            getDepartmentsFaculty(departmentId),
+                            rs.getString("name"),
+                            rs.getInt("department_id")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving department: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Department getDepartment(String name) {
+        String sql = "SELECT * FROM departments WHERE name = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Department(
+                            getDeparmentsCourses(rs.getInt("department_id")),
+                            getDepartmentsFaculty(rs.getInt("department_id")),
+                            rs.getString("name"),
+                            rs.getInt("department_id")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving department by name: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public List<Faculty> getDepartmentsFaculty(int departmentId) {
+        String sql = "SELECT user_id FROM faculty WHERE department_id = ?";
+        List<Faculty> facultyList = new ArrayList<>();
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            try (var rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    facultyList.add(getFaculty(rs.getString("user_id")));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving departments faculty: " + e.getMessage());
+        }
+        return facultyList;
+    }
+
+    public List<Course> getDeparmentsCourses(int departmentId) {
+        String sql = "SELECT course_id FROM courses WHERE department_id = ?";
+        List<Course> courseList = new ArrayList<>();
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            try (var rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    courseList.add(getCourse(rs.getInt("course_id")));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving departments courses: " + e.getMessage());
+        }
+        return courseList;
+    }
 
     public boolean updateDepartment(Department department) {
         String sql = "UPDATE departments SET name = ? WHERE department_id = ?";

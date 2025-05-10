@@ -1,4 +1,5 @@
 package com.users;
+import com.academics.Course;
 import com.database.DatabaseManager;
 
 import java.util.ArrayList;
@@ -8,7 +9,7 @@ public class Faculty extends User {
     private String facultyId;
     private int department = -1;
     private String expertise;
-    private ArrayList<Integer> coursesTeaching;
+    private ArrayList<Course> coursesTeaching;
     private DatabaseManager db = new DatabaseManager();
 
 
@@ -18,7 +19,14 @@ public class Faculty extends User {
         this.expertise = expertise;
     }
 
-    public Faculty(String userId, String username, String password, String name, String email, String contactInfo, String facultyId, int department, String expertise, ArrayList<Integer> coursesTeaching) {
+    public Faculty(String userId, String username, String password, String name, String email, String contactInfo, String facultyId, String expertise, int department) {
+        super(userId, username, password, name, email, contactInfo);
+        this.facultyId = facultyId;
+        this.expertise = expertise;
+        this.department = department;
+    }
+
+    public Faculty(String userId, String username, String password, String name, String email, String contactInfo, String facultyId, int department, String expertise, ArrayList<Course> coursesTeaching) {
         super(userId, username, password, name, email, contactInfo);
         this.facultyId = facultyId;
         this.department = department;
@@ -27,8 +35,45 @@ public class Faculty extends User {
     }
 
     @Override
-    String updateProfile() {
-        return "";
+    boolean updateProfile() {
+        if (db == null) {
+            return false;
+        }
+
+        String[] userData = {getUsername(), getName(), getEmail(), getContactInfo(), UserType.FACULTY.getDisplayName(), };
+        try {
+            boolean success = db.updateUserProfile(getUserId(), userData);
+
+            if (success) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            // Catch any unexpected exceptions
+            System.out.println("Failed: An error occurred while updating the profile - " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean addCourse(Course course) {
+        if (course == null) {
+            throw new IllegalArgumentException("Course cannot be null");
+        }
+        if (coursesTeaching == null) {
+            coursesTeaching = new ArrayList<>();
+        }
+        if (coursesTeaching.contains(course)) {
+            System.out.println("The course is already being taught by the faculty.");
+            return false;
+        }
+        coursesTeaching.add(course);
+        course.setInstructor(facultyId);
+        if (db.updateCourse(course)) {
+            return true;
+        } else {
+            throw new IllegalArgumentException("Failed to update course in DB.");
+        }
     }
 
     public String getFacultyId() {
@@ -55,11 +100,11 @@ public class Faculty extends User {
         this.expertise = expertise;
     }
 
-    public ArrayList<Integer> getCoursesTeaching() {
+    public ArrayList<Course> getCoursesTeaching() {
         return coursesTeaching;
     }
 
-    public void setCoursesTeaching(ArrayList<Integer> coursesTeaching) {
+    public void setCoursesTeaching(ArrayList<Course> coursesTeaching) {
         this.coursesTeaching = coursesTeaching;
     }
 

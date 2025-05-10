@@ -22,7 +22,7 @@ public abstract class User {
     }
 
 
-    abstract String updateProfile();
+    abstract boolean updateProfile();
 
     public enum UserType {
 
