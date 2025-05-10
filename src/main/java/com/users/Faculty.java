@@ -1,8 +1,10 @@
 package com.users;
 import com.academics.Course;
+import com.academics.Enrollment;
 import com.database.DatabaseManager;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Faculty extends User {
 
@@ -104,61 +106,53 @@ public class Faculty extends User {
         return coursesTeaching;
     }
 
-    public void setCoursesTeaching(ArrayList<Course> coursesTeaching) {
-        this.coursesTeaching = coursesTeaching;
+    public void assignGrades(Student student, Course course, int grade) {
+        if (!coursesTeaching.contains(course)) {
+            System.out.println("You do not teach this course.");
+            return;
+        }
+        Enrollment enrollment = (Enrollment)course.getEnrolledStudents();
+        if (enrollment == null) {
+            System.out.println("The student is not enrolled in this course.");
+            return;
+        }
+        enrollment.assignGrade(grade);
+        System.out.println("Grade assigned successfully to " + student.getName() + " in " + course.getTitle());
+    }
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public void manageCourse(Course course) {
+        if (!coursesTeaching.contains(course)) {
+            System.out.println("You do not have permission to manage this course.");
+            return;
+        }
+
+        // Placeholder for management actions (e.g., edit title, description, etc.)
+        System.out.println("Managing course: " + course.getTitle());
+        // Example: course.setTitle("New Title");
+    }
+    private String officeHours;
+
+    public void setOfficeHours(String officeHours) {
+        this.officeHours = officeHours;
+        System.out.println("Office hours updated to: " + officeHours);
     }
 
-//    public void assignGrades(Student student, Course course, String grade) {
-//        if (!coursesTeaching.contains(course)) {
-//            System.out.println("You do not teach this course.");
-//            return;
-//        }
-//        Enrollment enrollment = course.getEnrolledStudents(student);
-//        if (enrollment == null) {
-//            System.out.println("The student is not enrolled in this course.");
-//            return;
-//        }
-//        enrollment.assignGrade(grade);
-//        System.out.println("Grade assigned successfully to " + student.getName() + " in " + course.getTitle());
-//    }
-//
-//    public void manageCourse(Course course, String operation, String attribute) {
-//
-//
-//        if (!coursesTeaching.contains(course)) {
-//            System.out.println("You do not have permission to manage this course.");
-//            return;
-//        }
-//
-//        // Placeholder for management actions (e.g., edit title, description, etc.)
-//        System.out.println("Managing course: " + course.getTitle());
-//        // Example: course.setTitle("New Title");
-//    }
-//
-//    private String officeHours;
-//
-//    public void setOfficeHours(String officeHours) {
-//        this.officeHours = officeHours;
-//        System.out.println("Office hours updated to: " + officeHours);
-//    }
-//
-//    public String getOfficeHours() {
-//        return officeHours;
-//    }
-//
-//    public void viewStudentRoster(Course course) {
-//        if (!coursesTeaching.contains(course)) {
-//            System.out.println("You are not assigned to this course.");
-//            return;
-//        }
-//
-//        List<String> students = course.getEnrolledStudents();
-//        System.out.println("Students enrolled in " + course.getTitle() + ":");
-//        for (String studentId : students) {
-//            Student dbStudent = db.getStudent(studentId);
-//            System.out.println("- " + dbStudent.getName() + " (" + dbStudent.getStudentId() + ")");
-//        }
-//
-//
-//    }
+    public String getOfficeHours() {
+        return officeHours;
+    }
+    public void viewStudentRoster(Course course) {
+        if (!coursesTeaching.contains(course.getCourseId())) {
+            System.out.println("You are not assigned to this course.");
+            return;
+        }
+
+        List<String> students = course.getEnrolledStudents();
+        System.out.println("Students enrolled in " + course.getTitle() + ":");
+        for (String student : students) {
+            Student dbStudent=db.getStudent(student);
+            System.out.println("- "+dbStudent.getName()+"( "+dbStudent.getStudentId()+")");
+        }
+    }
+
+
 }
