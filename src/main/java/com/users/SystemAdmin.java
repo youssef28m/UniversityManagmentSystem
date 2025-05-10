@@ -17,8 +17,8 @@ public class SystemAdmin extends User {
     }
 
     @Override
-    String updateProfile() {
-        return "";
+    boolean updateProfile() {
+        return true;
     }
 
     public String getAdminId() {
