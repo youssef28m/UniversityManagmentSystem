@@ -24,10 +24,10 @@ public class Student extends User {
         setUserType(UserType.STUDENT);
     }
 
-    public Student(String userId, String username, String password, String name, String email, String contactInfo,
-                   String studentId, String admissionDate, String academicStatus) {
+    public Student(String userId ,String username, String password, String name, String email, String contactInfo,
+                   String admissionDate, String academicStatus) {
         super(userId, username, password, name, email, contactInfo);
-        this.studentId = studentId;
+        setStudentId();
         this.admissionDate = admissionDate;
         this.academicStatus = AcademicStatus.fromString(academicStatus);
         setUserType(UserType.STUDENT);
@@ -243,8 +243,16 @@ public class Student extends User {
         return studentId;
     }
 
-    public void setStudentId(String studentId) {
-        this.studentId = studentId;
+    public void setStudentId() {
+        List<String[]> dbStudents = db.getAllStudents();
+        if(dbStudents.isEmpty()) {
+            this.studentId = "240001";
+        } else {
+            String[] lastStudent = dbStudents.get(dbStudents.size() - 1);
+            String lastStudentId = lastStudent[0];
+            int id = Integer.parseInt(lastStudentId) + 1;
+            this.studentId = String.valueOf(id);
+        }
     }
 
     public String getAdmissionDate() {

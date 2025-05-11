@@ -137,7 +137,6 @@ public class DatabaseManager {
             pstmt.setString(6, user.getContactInfo());
             pstmt.setString(7, user.getUserType().getDisplayName());
             pstmt.executeUpdate();
-            System.out.println("User created successfully");
             return true;
 
         } catch (SQLException e) {
@@ -547,6 +546,34 @@ public class DatabaseManager {
         return null;
     }
 
+    public ArrayList<String[]> getAllFaculty() {
+        String sql = "SELECT faculty_id, user_id, department_id, expertise FROM faculty";
+
+        ArrayList<String[]> facultyList = new ArrayList<>();
+
+        try (var conn = connect();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String facultyId = rs.getString("faculty_id");
+                String userId = rs.getString("user_id");
+                String departmentId = rs.getString("department_id");
+                String expertise = rs.getString("expertise");
+
+                String[] faculty = {facultyId, userId, departmentId, expertise};
+                facultyList.add(faculty);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting faculty: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+        return facultyList;
+    }
+
+
     // ----------------------------------------------------------------------------- //
     // SystemAdmin Management
     // ----------------------------------------------------------------------------- //
@@ -565,6 +592,116 @@ public class DatabaseManager {
             System.err.println("Error creating system admin: " + e.getMessage());
             return false;
         }
+    }
+
+    public ArrayList<String[]> getAllSystemAdmin() {
+        String sql = "SELECT admin_id, user_id, security_level FROM system_admin";
+
+        ArrayList<String[]> adminList = new ArrayList<>();
+
+        try (var conn = connect();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String adminId = rs.getString("admin_id");
+                String userId = rs.getString("user_id");
+                String securityLevel = rs.getString("security_level");
+
+                String[] admin = {adminId, userId, securityLevel};
+                adminList.add(admin);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting system admins: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+        return adminList;
+    }
+
+    public boolean updateSystemAdmin(SystemAdmin admin) {
+        String userSql = "UPDATE users SET username = ?, password = ?, name = ?, email = ?, contact_info = ?, user_type = ? WHERE user_id = ?";
+        String adminSql = "UPDATE system_admin SET security_level = ? WHERE admin_id = ?";
+
+        try (var conn = connect()) {
+            conn.setAutoCommit(false);
+
+            try (var userPstmt = conn.prepareStatement(userSql)) {
+                userPstmt.setString(1, admin.getUsername());
+                userPstmt.setString(2, admin.getPassword());
+                userPstmt.setString(3, admin.getName());
+                userPstmt.setString(4, admin.getEmail());
+                userPstmt.setString(5, admin.getContactInfo());
+                userPstmt.setString(6, admin.getUserType().getDisplayName());
+                userPstmt.setString(7, admin.getUserId());
+                userPstmt.executeUpdate();
+            }
+
+            try (var adminPstmt = conn.prepareStatement(adminSql)) {
+                adminPstmt.setString(1, admin.getSecurityLevel());
+                adminPstmt.setString(2, admin.getAdminId());
+                adminPstmt.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error updating system admin: " + e.getMessage());
+            try (var conn = connect()) {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                System.err.println("Rollback error: " + rollbackEx.getMessage());
+            }
+            return false;
+        }
+    }
+
+    public boolean deleteSystemAdmin(String adminId) {
+        String sql = "DELETE FROM users WHERE user_id = (SELECT user_id FROM system_admin WHERE admin_id = ?)";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, adminId);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                return true;
+            } else {
+                System.err.println("No system admin found with admin_id: " + adminId);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error deleting system admin: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public SystemAdmin getSystemAdmin(String adminId) {
+        String sql = "SELECT sa.admin_id, sa.user_id, sa.security_level, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM system_admin sa JOIN users u ON sa.user_id = u.user_id " +
+                "WHERE sa.admin_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, adminId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new SystemAdmin(
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("admin_id"),
+                            rs.getString("security_level")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving system admin: " + e.getMessage());
+        }
+        return null;
     }
 
     // ----------------------------------------------------------------------------- //
@@ -626,7 +763,7 @@ public class DatabaseManager {
                 String role = rs.getString("role");
 
                 return new AdminStaff(userId, username, password, name, email, contactInfo,
-                        retrievedStaffId, departmentId, role);
+                        departmentId, role , retrievedStaffId);
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving Admin Staff: " + e.getMessage());
@@ -634,6 +771,35 @@ public class DatabaseManager {
 
         return null;
     }
+
+    public ArrayList<String[]> getAllStaff() {
+        String sql = "SELECT staff_id, user_id, department_id, role FROM admin_staff";
+
+        ArrayList<String[]> staffList = new ArrayList<>();
+
+        try (var conn = connect();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String staffId = rs.getString("staff_id");
+                String userId = rs.getString("user_id");
+                String departmentId = rs.getString("department_id");
+                String role = rs.getString("role");
+
+                // Create an array for each staff and add to the list
+                String[] staff = {staffId, userId, departmentId, role};
+                staffList.add(staff);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting admin staff: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+        return staffList;
+    }
+
 
     // ----------------------------------------------------------------------------- //
     // Course Management

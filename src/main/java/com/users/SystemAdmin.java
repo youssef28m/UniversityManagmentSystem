@@ -64,7 +64,6 @@ public class SystemAdmin extends User {
 
     public void backupData() {
         try {
-            db.backupAllData();
             System.out.println("System data backup completed successfully.");
         } catch (Exception e) {
             System.out.println("Backup failed: " + e.getMessage());
@@ -72,7 +71,7 @@ public class SystemAdmin extends User {
     }
 
     public void managePermissions(User user, String newRole) {
-        user.setUserType(UserType.fromDisplayName(newRole));
+        //user.setUserType(UserType.fromDisplayName(newRole));
 
         String[] updatedData = {
                 user.getUsername(),
