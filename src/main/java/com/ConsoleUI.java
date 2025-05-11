@@ -22,7 +22,7 @@ public class ConsoleUI {
     }
 
     private void displayLoginMenu() {
-        System.out.println("==== ALEXANDRIA UNIVERSITY MANAGEMENT SYSTEM ====");
+        System.out.println("==== UNIVERSITY MANAGEMENT SYSTEM ====");
         System.out.println("1. Login");
         System.out.println("2. Exit");
         System.out.print("Enter your choice: ");
@@ -37,7 +37,7 @@ public class ConsoleUI {
                 handleLogin();
                 return true;
             case 2:
-                System.out.println("Thank you for using Alexandria University Management System!");
+                System.out.println("Thank you for using University Management System!");
                 return false;
             default:
                 System.out.println("Invalid choice. Please try again.");
