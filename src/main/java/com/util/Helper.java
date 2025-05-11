@@ -21,17 +21,4 @@ public class Helper {
     public static String getCurrentDate() {
         return LocalDate.now().toString();
     }
-
-    public static String generateStudentId() {
-        return "test";
-    }
-    public static String generateFacultyId() {
-        return "test";
-    }
-    public static String generateAdminStaffId() {
-        return "test";
-    }
-    public static String generateSystemAdminId() {
-        return "test";
-    }
 }

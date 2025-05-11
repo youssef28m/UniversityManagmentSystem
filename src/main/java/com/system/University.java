@@ -141,7 +141,7 @@ public class University {
 
 
     public ArrayList<Department> getDepartments() {
-        return new ArrayList<>(departments); // Return a copy to prevent direct modification
+        return new ArrayList<>(departments);
     }
 
     public ArrayList<Course> getCourses() {

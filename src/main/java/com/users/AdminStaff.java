@@ -19,13 +19,25 @@ public class AdminStaff extends User {
     private DatabaseManager db = new DatabaseManager();
 
     public AdminStaff(String userId, String username, String password, String name,
-                      String email, String contactInfo, String staffId,
-                      int departmentId, String role) {
+                      String email, String contactInfo,
+                      int departmentId, String role, String staffId) {
         super(userId, username, password, name, email, contactInfo);
         this.staffId = staffId;
         this.departmentId = departmentId;
         this.role = role;
         setUserType(UserType.ADMIN_STAFF);
+    }
+    public AdminStaff(String userId, String username, String password, String name,
+                      String email, String contactInfo, int departmentId, String role) {
+        super(userId, username, password, name, email, contactInfo);
+        this.departmentId = departmentId;
+        this.role = role;
+        setUserType(UserType.ADMIN_STAFF);
+        setStaffId();
+    }
+
+    public AdminStaff() {
+
     }
 
     @Override
@@ -52,19 +64,19 @@ public class AdminStaff extends User {
     public Student registerStudent(University university, String name, String email,
                                    String contactInfo, String password) {
         // Create a new Student object
-        String studentId = Helper.generateStudentId();
-        String userId = "S" + studentId;
 
         Student newStudent = new Student();
+        newStudent.setStudentId();
+        String userId = "S" + newStudent.getStudentId();
         newStudent.setUserId(userId);
         newStudent.setUsername(name.toLowerCase().replaceAll("\\s+", ""));
         newStudent.setPassword(password);
         newStudent.setName(name);
         newStudent.setEmail(email);
         newStudent.setContactInfo(contactInfo);
-        newStudent.setStudentId(studentId);
         newStudent.setAdmissionDate(Helper.getCurrentDate());
         newStudent.setAcademicStatus(Student.AcademicStatus.ACTIVE);
+        newStudent.setUserType(UserType.STUDENT);
 
         // Register the student through the university
         boolean success = university.registerStudent(newStudent);
@@ -203,8 +215,16 @@ public class AdminStaff extends User {
         return staffId;
     }
 
-    public void setStaffId(String staffId) {
-        this.staffId = staffId;
+    public void setStaffId() {
+        List<String[]> dbAdminStaff = db.getAllStaff();
+        if(dbAdminStaff.isEmpty()) {
+            this.staffId = "240001";
+        } else {
+            String[] lastStudent = dbAdminStaff.get(dbAdminStaff.size() - 1);
+            String lastStudentId = lastStudent[0];
+            int id = Integer.parseInt(lastStudentId) + 1;
+            this.staffId = String.valueOf(id);
+        }
     }
 
     public int getDepartmentId() {
