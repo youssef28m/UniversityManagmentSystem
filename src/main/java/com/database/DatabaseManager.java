@@ -1,8 +1,8 @@
-package database;
+package com.database;
 
-import users.*;
-import academics.*;
-import system.*;
+import com.academics.*;
+import com.system.*;
+import com.users.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -45,7 +45,7 @@ public class DatabaseManager {
                 ");";
 
         String departmentTable = "CREATE TABLE IF NOT EXISTS departments (" +
-                "department_id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "department_id INTEGER PRIMARY KEY," +
                 "name TEXT UNIQUE NOT NULL" +
                 ");";
 
@@ -99,8 +99,8 @@ public class DatabaseManager {
                 ");";
 
         String prerequisitesTable = "CREATE TABLE IF NOT EXISTS prerequisites (" +
-                "prerequisit_course TEXT PRIMARY KEY," +
-                "course_id INTGER NOT NULL UNIQUE," +
+                "prerequisit_course TEXT," +
+                "course_id INTGER NOT NULL PRIMARY KEY," +
                 "FOREIGN KEY (course_id) REFERENCES courses(course_id)" +
                 ");";
 
@@ -137,7 +137,6 @@ public class DatabaseManager {
             pstmt.setString(6, user.getContactInfo());
             pstmt.setString(7, user.getUserType().getDisplayName());
             pstmt.executeUpdate();
-            System.out.println("User created successfully");
             return true;
 
         } catch (SQLException e) {
@@ -291,7 +290,7 @@ public class DatabaseManager {
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql) ) {
             pstmt.setString(1, student.getStudentId());
             pstmt.setString(2, student.getAdmissionDate());
-            pstmt.setString(3, student.getacademicStatus());
+            pstmt.setString(3, student.getAcademicStatus());
             pstmt.setString(4, student.getUserId());
             pstmt.executeUpdate();
             return true;
@@ -314,6 +313,39 @@ public class DatabaseManager {
                 if (rs.next()) {
                     List<Integer> enrolledCourses = getEnrolledCourses(studentId);
                     return new Student(
+                            rs.getString("user_type"),
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("student_id"),
+                            rs.getString("admissionDate"),
+                            rs.getString("academicStatus"),
+                            enrolledCourses
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving student: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Student getStudentByUserId(String userId) {
+        String sql = "SELECT s.student_id, s.admissionDate, s.academicStatus, s.user_id, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM students s JOIN users u ON s.user_id = u.user_id " +
+                "WHERE u.user_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    List<Integer> enrolledCourses = getEnrolledCourses(rs.getString("student_id"));
+                    return new Student(
+                            rs.getString("user_type"),
                             rs.getString("user_id"),
                             rs.getString("username"),
                             rs.getString("password"),
@@ -380,7 +412,7 @@ public class DatabaseManager {
             // Update students table
             try (var studentPstmt = conn.prepareStatement(studentSql)) {
                 studentPstmt.setString(1, student.getAdmissionDate());
-                studentPstmt.setString(2, student.getacademicStatus());
+                studentPstmt.setString(2, student.getAcademicStatus());
                 studentPstmt.setString(3, student.getStudentId());
                 studentPstmt.executeUpdate();
             }
@@ -506,9 +538,10 @@ public class DatabaseManager {
             pstmt.setString(1, facultyId);
             try (var rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    ArrayList<Integer> coursesTeaching = getCoursesTeaching(facultyId); // Implement this if needed
+                    ArrayList<Course> coursesTeaching = getCoursesTeaching(facultyId);
 
                     return new Faculty(
+                            rs.getString("user_type"),
                             rs.getString("user_id"),
                             rs.getString("username"),
                             rs.getString("password"),
@@ -528,15 +561,15 @@ public class DatabaseManager {
         return null;
     }
 
-    public ArrayList<Integer> getCoursesTeaching(String facultyId) {
+    public ArrayList<Course> getCoursesTeaching(String facultyId) {
         String sql = "SELECT course_id FROM courses WHERE instructor_id = ?";
-        ArrayList<Integer> coursesTeaching = new ArrayList<>();
+        ArrayList<Course> coursesTeaching = new ArrayList<>();
 
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, facultyId);
             try (var rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    coursesTeaching.add(rs.getInt("course_id"));
+                    coursesTeaching.add(getCourse(rs.getInt("course_id")));
                 }
             }
             return coursesTeaching;
@@ -546,6 +579,66 @@ public class DatabaseManager {
         }
         return null;
     }
+
+    public ArrayList<String[]> getAllFaculty() {
+        String sql = "SELECT faculty_id, user_id, department_id, expertise FROM faculty";
+
+        ArrayList<String[]> facultyList = new ArrayList<>();
+
+        try (var conn = connect();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String facultyId = rs.getString("faculty_id");
+                String userId = rs.getString("user_id");
+                String departmentId = rs.getString("department_id");
+                String expertise = rs.getString("expertise");
+
+                String[] faculty = {facultyId, userId, departmentId, expertise};
+                facultyList.add(faculty);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting faculty: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+        return facultyList;
+    }
+
+    public Faculty getFacultyByUserId(String userId) {
+        String sql = "SELECT f.faculty_id, f.user_id, f.department_id, f.expertise, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM faculty f JOIN users u ON f.user_id = u.user_id " +
+                "WHERE f.user_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    ArrayList<Course> coursesTeaching = getCoursesTeaching(rs.getString("faculty_id"));
+                    return new Faculty(
+                            rs.getString("user_type"),
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("faculty_id"),
+                            rs.getInt("department_id"),
+                            rs.getString("expertise"),
+                            coursesTeaching
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving faculty by user ID: " + e.getMessage());
+        }
+        return null;
+    }
+
 
     // ----------------------------------------------------------------------------- //
     // SystemAdmin Management
@@ -565,6 +658,144 @@ public class DatabaseManager {
             System.err.println("Error creating system admin: " + e.getMessage());
             return false;
         }
+    }
+
+    public ArrayList<String[]> getAllSystemAdmin() {
+        String sql = "SELECT admin_id, user_id, security_level FROM system_admin";
+
+        ArrayList<String[]> adminList = new ArrayList<>();
+
+        try (var conn = connect();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String adminId = rs.getString("admin_id");
+                String userId = rs.getString("user_id");
+                String securityLevel = rs.getString("security_level");
+
+                String[] admin = {adminId, userId, securityLevel};
+                adminList.add(admin);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting system admins: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+        return adminList;
+    }
+
+    public boolean updateSystemAdmin(SystemAdmin admin) {
+        String userSql = "UPDATE users SET username = ?, password = ?, name = ?, email = ?, contact_info = ?, user_type = ? WHERE user_id = ?";
+        String adminSql = "UPDATE system_admin SET security_level = ? WHERE admin_id = ?";
+
+        try (var conn = connect()) {
+            conn.setAutoCommit(false);
+
+            try (var userPstmt = conn.prepareStatement(userSql)) {
+                userPstmt.setString(1, admin.getUsername());
+                userPstmt.setString(2, admin.getPassword());
+                userPstmt.setString(3, admin.getName());
+                userPstmt.setString(4, admin.getEmail());
+                userPstmt.setString(5, admin.getContactInfo());
+                userPstmt.setString(6, admin.getUserType().getDisplayName());
+                userPstmt.setString(7, admin.getUserId());
+                userPstmt.executeUpdate();
+            }
+
+            try (var adminPstmt = conn.prepareStatement(adminSql)) {
+                adminPstmt.setString(1, admin.getSecurityLevel());
+                adminPstmt.setString(2, admin.getAdminId());
+                adminPstmt.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error updating system admin: " + e.getMessage());
+            try (var conn = connect()) {
+                conn.rollback();
+            } catch (SQLException rollbackEx) {
+                System.err.println("Rollback error: " + rollbackEx.getMessage());
+            }
+            return false;
+        }
+    }
+
+    public boolean deleteSystemAdmin(String adminId) {
+        String sql = "DELETE FROM users WHERE user_id = (SELECT user_id FROM system_admin WHERE admin_id = ?)";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, adminId);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                return true;
+            } else {
+                System.err.println("No system admin found with admin_id: " + adminId);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error deleting system admin: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public SystemAdmin getSystemAdmin(String adminId) {
+        String sql = "SELECT sa.admin_id, sa.user_id, sa.security_level, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM system_admin sa JOIN users u ON sa.user_id = u.user_id " +
+                "WHERE sa.admin_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, adminId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new SystemAdmin(
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("admin_id"),
+                            rs.getString("security_level")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving system admin: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public SystemAdmin getSystemAdminByUserId(String userId) {
+        String sql = "SELECT sa.admin_id, sa.user_id, sa.security_level, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM system_admin sa JOIN users u ON sa.user_id = u.user_id " +
+                "WHERE sa.user_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new SystemAdmin(
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("admin_id"),
+                            rs.getString("security_level")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving system admin by user ID: " + e.getMessage());
+        }
+        return null;
     }
 
     // ----------------------------------------------------------------------------- //
@@ -587,6 +818,114 @@ public class DatabaseManager {
             return false;
         }
     }
+
+    public boolean updateAdminStaff(AdminStaff staff) {
+        String sql = "UPDATE admin_staff SET department_id = ?, role = ? WHERE staff_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)){
+            pstmt.setInt(1, staff.getDepartmentId());
+            pstmt.setString(2, staff.getRole());
+            pstmt.setString(3, staff.getStaffId());
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Error updating admin staff: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public AdminStaff getAdminStaff(String staffId) {
+        String sql = "SELECT u.user_id, u.username, u.password, u.name, u.email, u.contact_info, "
+                + "a.staff_id, a.department_id, a.role "
+                + "FROM users u "
+                + "JOIN admin_staff a ON u.user_id = a.user_id "
+                + "WHERE a.staff_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, staffId);
+
+            var rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String userType = rs.getString("user_type");
+                String userId = rs.getString("user_id");
+                String username = rs.getString("username");
+                String password = rs.getString("password");
+                String name = rs.getString("name");
+                String email = rs.getString("email");
+                String contactInfo = rs.getString("contact_info");
+                String retrievedStaffId = rs.getString("staff_id");
+                int departmentId = rs.getInt("department_id");
+                String role = rs.getString("role");
+
+                return new AdminStaff(userType, userId, username, password, name, email, contactInfo,
+                        departmentId, role , retrievedStaffId);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving Admin Staff: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    public ArrayList<String[]> getAllStaff() {
+        String sql = "SELECT staff_id, user_id, department_id, role FROM admin_staff";
+
+        ArrayList<String[]> staffList = new ArrayList<>();
+
+        try (var conn = connect();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String staffId = rs.getString("staff_id");
+                String userId = rs.getString("user_id");
+                String departmentId = rs.getString("department_id");
+                String role = rs.getString("role");
+
+                // Create an array for each staff and add to the list
+                String[] staff = {staffId, userId, departmentId, role};
+                staffList.add(staff);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting admin staff: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+        return staffList;
+    }
+
+    public AdminStaff getAdminStaffByUserId(String userId) {
+        String sql = "SELECT u.user_id, u.username, u.password, u.name, u.email, u.contact_info, " +
+                "a.staff_id, a.department_id, a.role, u.user_type " +
+                "FROM users u " +
+                "JOIN admin_staff a ON u.user_id = a.user_id " +
+                "WHERE a.user_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new AdminStaff(
+                            rs.getString("user_type"),
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getInt("department_id"),
+                            rs.getString("role"),
+                            rs.getString("staff_id")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving admin staff by user ID: " + e.getMessage());
+        }
+        return null;
+    }
+
 
     // ----------------------------------------------------------------------------- //
     // Course Management
@@ -617,7 +956,7 @@ public class DatabaseManager {
 
     public Course getCourse(int courseId) {
         String courseData = "SELECT course_id, title, description, credit_hours, " +
-                "instructor_id, max_capacity, schedule " +
+                "instructor_id, max_capacity, schedule, department_id " +
                 "FROM courses " +
                 "WHERE course_id = ?";
 
@@ -917,43 +1256,79 @@ public class DatabaseManager {
         }
     }
 
-//    public Department getDepartment(int departmentId) {
-//        String sql = "SELECT * FROM departments WHERE department_id = ?";
-//
-//        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
-//            pstmt.setInt(1, departmentId);
-//            try (var rs = pstmt.executeQuery()) {
-//                if (rs.next()) {
-//                    return new Department(
-//                            rs.getInt("department_id"),
-//                            rs.getString("name")
-//                    );
-//                }
-//            }
-//        } catch (SQLException e) {
-//            System.err.println("Error retrieving department: " + e.getMessage());
-//        }
-//        return null;
-//    }
-//
-//    public Department getDepartment(String name) {
-//        String sql = "SELECT * FROM departments WHERE name = ?";
-//
-//        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
-//            pstmt.setString(1, name);
-//            try (var rs = pstmt.executeQuery()) {
-//                if (rs.next()) {
-//                    return new Department(
-//                            rs.getInt("department_id"),
-//                            rs.getString("name")
-//                    );
-//                }
-//            }
-//        } catch (SQLException e) {
-//            System.err.println("Error retrieving department by name: " + e.getMessage());
-//        }
-//        return null;
-//    }
+    public Department getDepartment(int departmentId) {
+        String sql = "SELECT * FROM departments WHERE department_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Department(
+                            getDeparmentsCourses(departmentId),
+                            getDepartmentsFaculty(departmentId),
+                            rs.getString("name"),
+                            rs.getInt("department_id")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving department: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Department getDepartment(String name) {
+        String sql = "SELECT * FROM departments WHERE name = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Department(
+                            getDeparmentsCourses(rs.getInt("department_id")),
+                            getDepartmentsFaculty(rs.getInt("department_id")),
+                            rs.getString("name"),
+                            rs.getInt("department_id")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving department by name: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public List<Faculty> getDepartmentsFaculty(int departmentId) {
+        String sql = "SELECT user_id FROM faculty WHERE department_id = ?";
+        List<Faculty> facultyList = new ArrayList<>();
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            try (var rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    facultyList.add(getFaculty(rs.getString("user_id")));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving departments faculty: " + e.getMessage());
+        }
+        return facultyList;
+    }
+
+    public List<Course> getDeparmentsCourses(int departmentId) {
+        String sql = "SELECT course_id FROM courses WHERE department_id = ?";
+        List<Course> courseList = new ArrayList<>();
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, departmentId);
+            try (var rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    courseList.add(getCourse(rs.getInt("course_id")));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving departments courses: " + e.getMessage());
+        }
+        return courseList;
+    }
 
     public boolean updateDepartment(Department department) {
         String sql = "UPDATE departments SET name = ? WHERE department_id = ?";

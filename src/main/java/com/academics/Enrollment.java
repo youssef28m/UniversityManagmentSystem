@@ -1,7 +1,7 @@
-package academics;
-import database.*;
-import users.Student;
-import util.Helper;
+package com.academics;
+import com.database.DatabaseManager;
+import com.users.Student;
+import com.util.Helper;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;

@@ -1,10 +1,11 @@
-package users;
+package com.users;
 
-import database.DatabaseManager;
-import academics.*;
+import com.academics.Course;
+import com.academics.Enrollment;
+import com.database.DatabaseManager;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDate;
 
 public class Student extends User {
     private String studentId;
@@ -13,23 +14,26 @@ public class Student extends User {
     private List<Integer> enrolledCourses = new ArrayList<>();
     private DatabaseManager db = new DatabaseManager();
 
-    public Student(String userId, String username, String password, String name, String email, String contactInfo,
+    public Student(String usertype ,String userId, String username, String password, String name, String email, String contactInfo,
                    String studentId, String admissionDate, String academicStatus, List<Integer> enrolledCourses) {
-        super(userId, username, password, name, email, contactInfo);
+        super(usertype,userId, username, password, name, email, contactInfo);
         this.studentId = studentId;
         this.admissionDate = admissionDate;
         this.academicStatus = AcademicStatus.fromString(academicStatus);
         this.enrolledCourses = enrolledCourses;
-        setUserType(UserType.STUDENT);
     }
 
-    public Student(String userId, String username, String password, String name, String email, String contactInfo,
-                   String studentId, String admissionDate, String academicStatus) {
-        super(userId, username, password, name, email, contactInfo);
-        this.studentId = studentId;
+    // for automatic user and student id
+    public Student(String userType,String username, String password, String name, String email, String contactInfo,
+                   String admissionDate, String academicStatus) {
+        super(userType, username, password, name, email, contactInfo);
+        setStudentId();
         this.admissionDate = admissionDate;
         this.academicStatus = AcademicStatus.fromString(academicStatus);
-        setUserType(UserType.STUDENT);
+    }
+
+    public Student() {
+
     }
 
     public enum AcademicStatus {
@@ -57,8 +61,29 @@ public class Student extends User {
     }
 
     @Override
-    public String updateProfile() {
-        return "";
+    public boolean updateProfile() {
+        // Ensure DatabaseManager is initialized
+        if (db == null) {
+            return false;
+        }
+
+        // Prepare user data for update
+        String[] userData = {getUsername(), getName(), getEmail(), getContactInfo(), UserType.STUDENT.getDisplayName()};
+
+        try {
+            boolean success = db.updateUserProfile(getUserId(), userData);
+
+            if (success) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception e) {
+            // Catch any unexpected exceptions
+            System.out.println("Failed: An error occurred while updating the profile - " + e.getMessage());
+            return false;
+        }
+
     }
 
 
@@ -217,8 +242,16 @@ public class Student extends User {
         return studentId;
     }
 
-    public void setStudentId(String studentId) {
-        this.studentId = studentId;
+    public void setStudentId() {
+        List<String[]> dbStudents = db.getAllStudents();
+        if(dbStudents.isEmpty()) {
+            this.studentId = "240001";
+        } else {
+            String[] lastStudent = dbStudents.get(dbStudents.size() - 1);
+            String lastStudentId = lastStudent[0];
+            int id = Integer.parseInt(lastStudentId) + 1;
+            this.studentId =String.valueOf(id);
+        }
     }
 
     public String getAdmissionDate() {
@@ -229,11 +262,11 @@ public class Student extends User {
         this.admissionDate = admissionDate;
     }
 
-    public String getacademicStatus() {
+    public String getAcademicStatus() {
         return academicStatus.getDisplayName();
     }
 
-    public void setacademicStatus(AcademicStatus academicStatus) {
+    public void setAcademicStatus(AcademicStatus academicStatus) {
         this.academicStatus = academicStatus;
     }
 

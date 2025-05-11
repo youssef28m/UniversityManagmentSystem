@@ -1,7 +1,8 @@
-package system;
-import database.DatabaseManager;
-import users.*;
-import academics.*;
+package com.system;
+import com.academics.Course;
+import com.database.DatabaseManager;
+import com.users.Faculty;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;

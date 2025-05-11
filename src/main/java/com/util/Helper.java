@@ -1,4 +1,6 @@
-package util;
+package com.util;
+
+import com.database.DatabaseManager;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -14,5 +16,9 @@ public class Helper {
         } catch (DateTimeParseException e) {
             return false;
         }
+    }
+
+    public static String getCurrentDate() {
+        return LocalDate.now().toString();
     }
 }
