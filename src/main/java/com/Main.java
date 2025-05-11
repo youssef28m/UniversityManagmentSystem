@@ -1,19 +1,24 @@
 package com;
 
+import com.academics.*;
 import com.database.DatabaseManager;
 import com.system.University;
-import com.users.AdminStaff;
-import com.users.Student;
-import com.users.Student;
-import com.users.User;
+import com.users.*;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class Main {
     public static void main(String[] args) {
         DatabaseManager db = new DatabaseManager();
-        University university = new University();
 
-        AdminStaff admin = db.getAdminStaff("240003");
+        ConsoleUI consoleUI = new ConsoleUI(new University());
+        consoleUI.start();
+
+
+
 
     }
 }

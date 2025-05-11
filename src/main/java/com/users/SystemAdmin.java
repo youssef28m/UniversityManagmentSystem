@@ -71,7 +71,7 @@ public class SystemAdmin extends User {
     }
 
     public void managePermissions(User user, String newRole) {
-        //user.setUserType(UserType.fromDisplayName(newRole));
+        // user.setUserType(UserType.fromDisplayName(newRole));
 
         String[] updatedData = {
                 user.getUsername(),

@@ -45,18 +45,30 @@ public class University {
 
             // Create appropriate user object based on type
             switch (userType) {
-                case "student":
-                    Student student = db.getStudent(userId);
+                case "Student":
+                    Student student = db.getStudentByUserId(userId);
                     if (student != null) users.add(student);
                     break;
-                case "faculty":
+                case "Faculty":
                     Faculty faculty = db.getFaculty(userId);
                     if (faculty != null) users.add(faculty);
                     break;
-                // Add other user types as needed
+                case "Admin Staff":
+                    AdminStaff adminStaff = db.getAdminStaffByUserId(userId);
+                    if (adminStaff != null) users.add(adminStaff);
+                    break;
+                case "System Admin":
+                    SystemAdmin systemAdmin = db.getSystemAdminByUserId(userId);
+                    if (systemAdmin != null) users.add(systemAdmin);
+                    break;
+                default:
+                    break;
+
             }
         }
         // todo load departments, courses
+
+
     }
 
     /**
@@ -68,22 +80,20 @@ public class University {
     public User authenticateUser(String userId, String password) {
         String[] userData = db.getOneUser(userId);
         if (userData != null) {
-            // Assuming password is stored at index 2
+
             if (userData[2].equals(password)) {
-                // Determine user type and return appropriate object
-                String userType = userData[1]; // Assuming user type is at index 1
+
+                String userType = userData[6];
 
                 switch (userType) {
-                    case "student":
-                        return db.getStudent(userId);
-                    case "faculty":
-                        return db.getFaculty(userId);
-                    case "admin":
-                        // todo make getSystemAdmin
-                        //return db.getSystemAdmin(userId);
-                    case "adminstaff":
-                        // todo make getAdminStaff
-                        //return db.getAdminStaff(userId);
+                    case "Student":
+                        return db.getStudentByUserId(userId);
+                    case "Faculty":
+                        return db.getFacultyByUserId(userId);
+                    case "System Admin":
+                        return db.getSystemAdminByUserId(userId);
+                    case "Admin Staff":
+                        return db.getAdminStaffByUserId(userId);
                     default:
                         return null;
                 }

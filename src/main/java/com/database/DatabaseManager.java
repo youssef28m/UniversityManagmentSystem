@@ -99,8 +99,8 @@ public class DatabaseManager {
                 ");";
 
         String prerequisitesTable = "CREATE TABLE IF NOT EXISTS prerequisites (" +
-                "prerequisit_course TEXT PRIMARY KEY," +
-                "course_id INTGER NOT NULL UNIQUE," +
+                "prerequisit_course TEXT," +
+                "course_id INTGER NOT NULL PRIMARY KEY," +
                 "FOREIGN KEY (course_id) REFERENCES courses(course_id)" +
                 ");";
 
@@ -290,7 +290,7 @@ public class DatabaseManager {
         try (var conn = connect(); var pstmt = conn.prepareStatement(sql) ) {
             pstmt.setString(1, student.getStudentId());
             pstmt.setString(2, student.getAdmissionDate());
-            pstmt.setString(3, student.getacademicStatus());
+            pstmt.setString(3, student.getAcademicStatus());
             pstmt.setString(4, student.getUserId());
             pstmt.executeUpdate();
             return true;
@@ -313,6 +313,39 @@ public class DatabaseManager {
                 if (rs.next()) {
                     List<Integer> enrolledCourses = getEnrolledCourses(studentId);
                     return new Student(
+                            rs.getString("user_type"),
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("student_id"),
+                            rs.getString("admissionDate"),
+                            rs.getString("academicStatus"),
+                            enrolledCourses
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving student: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Student getStudentByUserId(String userId) {
+        String sql = "SELECT s.student_id, s.admissionDate, s.academicStatus, s.user_id, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM students s JOIN users u ON s.user_id = u.user_id " +
+                "WHERE u.user_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    List<Integer> enrolledCourses = getEnrolledCourses(rs.getString("student_id"));
+                    return new Student(
+                            rs.getString("user_type"),
                             rs.getString("user_id"),
                             rs.getString("username"),
                             rs.getString("password"),
@@ -379,7 +412,7 @@ public class DatabaseManager {
             // Update students table
             try (var studentPstmt = conn.prepareStatement(studentSql)) {
                 studentPstmt.setString(1, student.getAdmissionDate());
-                studentPstmt.setString(2, student.getacademicStatus());
+                studentPstmt.setString(2, student.getAcademicStatus());
                 studentPstmt.setString(3, student.getStudentId());
                 studentPstmt.executeUpdate();
             }
@@ -508,6 +541,7 @@ public class DatabaseManager {
                     ArrayList<Course> coursesTeaching = getCoursesTeaching(facultyId);
 
                     return new Faculty(
+                            rs.getString("user_type"),
                             rs.getString("user_id"),
                             rs.getString("username"),
                             rs.getString("password"),
@@ -571,6 +605,38 @@ public class DatabaseManager {
         }
 
         return facultyList;
+    }
+
+    public Faculty getFacultyByUserId(String userId) {
+        String sql = "SELECT f.faculty_id, f.user_id, f.department_id, f.expertise, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM faculty f JOIN users u ON f.user_id = u.user_id " +
+                "WHERE f.user_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    ArrayList<Course> coursesTeaching = getCoursesTeaching(rs.getString("faculty_id"));
+                    return new Faculty(
+                            rs.getString("user_type"),
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("faculty_id"),
+                            rs.getInt("department_id"),
+                            rs.getString("expertise"),
+                            coursesTeaching
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving faculty by user ID: " + e.getMessage());
+        }
+        return null;
     }
 
 
@@ -704,6 +770,34 @@ public class DatabaseManager {
         return null;
     }
 
+    public SystemAdmin getSystemAdminByUserId(String userId) {
+        String sql = "SELECT sa.admin_id, sa.user_id, sa.security_level, " +
+                "u.username, u.password, u.name, u.email, u.contact_info, u.user_type " +
+                "FROM system_admin sa JOIN users u ON sa.user_id = u.user_id " +
+                "WHERE sa.user_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new SystemAdmin(
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getString("admin_id"),
+                            rs.getString("security_level")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving system admin by user ID: " + e.getMessage());
+        }
+        return null;
+    }
+
     // ----------------------------------------------------------------------------- //
     // AdminStaff Management
     // ----------------------------------------------------------------------------- //
@@ -752,6 +846,7 @@ public class DatabaseManager {
 
             var rs = pstmt.executeQuery();
             if (rs.next()) {
+                String userType = rs.getString("user_type");
                 String userId = rs.getString("user_id");
                 String username = rs.getString("username");
                 String password = rs.getString("password");
@@ -762,7 +857,7 @@ public class DatabaseManager {
                 int departmentId = rs.getInt("department_id");
                 String role = rs.getString("role");
 
-                return new AdminStaff(userId, username, password, name, email, contactInfo,
+                return new AdminStaff(userType, userId, username, password, name, email, contactInfo,
                         departmentId, role , retrievedStaffId);
             }
         } catch (SQLException e) {
@@ -800,6 +895,37 @@ public class DatabaseManager {
         return staffList;
     }
 
+    public AdminStaff getAdminStaffByUserId(String userId) {
+        String sql = "SELECT u.user_id, u.username, u.password, u.name, u.email, u.contact_info, " +
+                "a.staff_id, a.department_id, a.role, u.user_type " +
+                "FROM users u " +
+                "JOIN admin_staff a ON u.user_id = a.user_id " +
+                "WHERE a.user_id = ?";
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (var rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new AdminStaff(
+                            rs.getString("user_type"),
+                            rs.getString("user_id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("name"),
+                            rs.getString("email"),
+                            rs.getString("contact_info"),
+                            rs.getInt("department_id"),
+                            rs.getString("role"),
+                            rs.getString("staff_id")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving admin staff by user ID: " + e.getMessage());
+        }
+        return null;
+    }
+
 
     // ----------------------------------------------------------------------------- //
     // Course Management
@@ -830,7 +956,7 @@ public class DatabaseManager {
 
     public Course getCourse(int courseId) {
         String courseData = "SELECT course_id, title, description, credit_hours, " +
-                "instructor_id, max_capacity, schedule " +
+                "instructor_id, max_capacity, schedule, department_id " +
                 "FROM courses " +
                 "WHERE course_id = ?";
 

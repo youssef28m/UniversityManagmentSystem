@@ -18,18 +18,18 @@ public class AdminStaff extends User {
     private String role; // E.g., "Student Affairs", "Registrar", "Faculty Affairs"
     private DatabaseManager db = new DatabaseManager();
 
-    public AdminStaff(String userId, String username, String password, String name,
+    public AdminStaff(String userType,String userId, String username, String password, String name,
                       String email, String contactInfo,
                       int departmentId, String role, String staffId) {
-        super(userId, username, password, name, email, contactInfo);
+        super(userType,userId, username, password, name, email, contactInfo);
         this.staffId = staffId;
         this.departmentId = departmentId;
         this.role = role;
         setUserType(UserType.ADMIN_STAFF);
     }
-    public AdminStaff(String userId, String username, String password, String name,
+    public AdminStaff(String userType, String username, String password, String name,
                       String email, String contactInfo, int departmentId, String role) {
-        super(userId, username, password, name, email, contactInfo);
+        super(userType,username, password, name, email, contactInfo);
         this.departmentId = departmentId;
         this.role = role;
         setUserType(UserType.ADMIN_STAFF);
@@ -67,8 +67,7 @@ public class AdminStaff extends User {
 
         Student newStudent = new Student();
         newStudent.setStudentId();
-        String userId = "S" + newStudent.getStudentId();
-        newStudent.setUserId(userId);
+        newStudent.setUserId();
         newStudent.setUsername(name.toLowerCase().replaceAll("\\s+", ""));
         newStudent.setPassword(password);
         newStudent.setName(name);

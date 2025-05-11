@@ -14,23 +14,22 @@ public class Student extends User {
     private List<Integer> enrolledCourses = new ArrayList<>();
     private DatabaseManager db = new DatabaseManager();
 
-    public Student(String userId, String username, String password, String name, String email, String contactInfo,
+    public Student(String usertype ,String userId, String username, String password, String name, String email, String contactInfo,
                    String studentId, String admissionDate, String academicStatus, List<Integer> enrolledCourses) {
-        super(userId, username, password, name, email, contactInfo);
+        super(usertype,userId, username, password, name, email, contactInfo);
         this.studentId = studentId;
         this.admissionDate = admissionDate;
         this.academicStatus = AcademicStatus.fromString(academicStatus);
         this.enrolledCourses = enrolledCourses;
-        setUserType(UserType.STUDENT);
     }
 
-    public Student(String userId ,String username, String password, String name, String email, String contactInfo,
+    // for automatic user and student id
+    public Student(String userType,String username, String password, String name, String email, String contactInfo,
                    String admissionDate, String academicStatus) {
-        super(userId, username, password, name, email, contactInfo);
+        super(userType, username, password, name, email, contactInfo);
         setStudentId();
         this.admissionDate = admissionDate;
         this.academicStatus = AcademicStatus.fromString(academicStatus);
-        setUserType(UserType.STUDENT);
     }
 
     public Student() {
@@ -251,7 +250,7 @@ public class Student extends User {
             String[] lastStudent = dbStudents.get(dbStudents.size() - 1);
             String lastStudentId = lastStudent[0];
             int id = Integer.parseInt(lastStudentId) + 1;
-            this.studentId = String.valueOf(id);
+            this.studentId =String.valueOf(id);
         }
     }
 
@@ -263,7 +262,7 @@ public class Student extends User {
         this.admissionDate = admissionDate;
     }
 
-    public String getacademicStatus() {
+    public String getAcademicStatus() {
         return academicStatus.getDisplayName();
     }
 

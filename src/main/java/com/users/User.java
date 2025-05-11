@@ -1,5 +1,9 @@
 package com.users;
 
+import com.database.DatabaseManager;
+
+import java.util.ArrayList;
+
 public abstract class User {
     private String userId;
     private String username;
@@ -8,11 +12,23 @@ public abstract class User {
     private String email;
     private String contactInfo;
     private UserType userType;
+    private DatabaseManager db = new DatabaseManager();
 
     public User() {}
 
 
-    public User(String userId, String username, String password, String name, String email, String contactInfo) {
+    public User(String userType ,String username, String password, String name, String email, String contactInfo) {
+        this.userType = UserType.valueOf(userType.toUpperCase());
+        setUserId();
+        setUsername(username);
+        setPassword(password);
+        this.name = name;
+        setEmail(email);
+        this.contactInfo = contactInfo;
+    }
+
+    public User(String userType ,String userId ,String username, String password, String name, String email, String contactInfo) {
+        this.userType = UserType.valueOf(userType.toUpperCase());
         this.userId = userId;
         setUsername(username);
         setPassword(password);
@@ -46,9 +62,39 @@ public abstract class User {
         return userId;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+
+    public void setUserId() {
+        ArrayList<String[]> users = db.getUsersByType(userType.getDisplayName());
+        String prefix;
+
+        switch (userType) {
+            case STUDENT:
+                prefix = "S";
+                break;
+            case FACULTY:
+                prefix = "F";
+                break;
+            case ADMIN_STAFF:
+                prefix = "A";
+                break;
+            case SYSTEM_ADMIN:
+                prefix = "X";
+                break;
+            default:
+                throw new IllegalStateException("Unexpected user type: " + userType);
+        }
+
+        if (users.isEmpty()) {
+            this.userId = prefix + "240001";
+        } else {
+            String[] lastUser = users.get(users.size() - 1);
+            String lastUserId = lastUser[0]; // assuming user ID is at index 0
+            String numberPart = lastUserId.substring(1); // remove the prefix
+            int number = Integer.parseInt(numberPart) + 1;
+            this.userId = prefix + String.format("%06d", number);
+        }
     }
+
 
     public String getUsername() {
         return username;
