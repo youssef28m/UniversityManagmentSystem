@@ -36,19 +36,24 @@ public class ConsoleUI {
     }
 
     private boolean processLoginChoice() {
-        int choice = scanner.nextInt();
-        scanner.nextLine(); // Clear buffer
+        try {
+            String input = scanner.nextLine().trim();
+            int choice = Integer.parseInt(input);
 
-        switch (choice) {
-            case 1:
-                handleLogin();
-                return true;
-            case 2:
-                System.out.println("Thank you for using University Management System!");
-                return false;
-            default:
-                System.out.println("Invalid choice. Please try again.");
-                return true;
+            switch (choice) {
+                case 1:
+                    handleLogin();
+                    return true;
+                case 2:
+                    System.out.println("Thank you for using University Management System!");
+                    return false;
+                default:
+                    System.out.println("Invalid choice. Please enter 1 or 2.");
+                    return true;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input. Please enter a number (1 or 2).");
+            return true;
         }
     }
 
@@ -841,6 +846,16 @@ public class ConsoleUI {
 
     private void createCourse(AdminStaff admin) {
         System.out.println("\n=== Create Course ===");
+        System.out.print("Enter course ID (100-1000): ");
+        int courseId;
+        try {
+            courseId = Integer.parseInt(scanner.nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid course ID. Must be a number.");
+            waitForEnter();
+            return;
+        }
+
         System.out.print("Enter course title: ");
         String title = scanner.nextLine().trim();
         System.out.print("Enter course description: ");
@@ -851,6 +866,7 @@ public class ConsoleUI {
             creditHours = Integer.parseInt(scanner.nextLine().trim());
         } catch (NumberFormatException e) {
             System.out.println("Invalid credit hours.");
+            waitForEnter();
             return;
         }
         System.out.print("Enter max capacity: ");
@@ -859,6 +875,7 @@ public class ConsoleUI {
             maxCapacity = Integer.parseInt(scanner.nextLine().trim());
         } catch (NumberFormatException e) {
             System.out.println("Invalid max capacity.");
+            waitForEnter();
             return;
         }
         System.out.print("Enter department ID: ");
@@ -867,11 +884,33 @@ public class ConsoleUI {
             departmentId = Integer.parseInt(scanner.nextLine().trim());
         } catch (NumberFormatException e) {
             System.out.println("Invalid department ID.");
+            waitForEnter();
             return;
+        }
+        System.out.print("Enter prerequisite course IDs (comma-separated, leave empty if none): ");
+        String prereqInput = scanner.nextLine().trim();
+        List<Integer> prerequisites = new ArrayList<>();
+        if (!prereqInput.isEmpty()) {
+            try {
+                String[] prereqIds = prereqInput.split(",");
+                for (String id : prereqIds) {
+                    int prereqId = Integer.parseInt(id.trim());
+                    if (prereqId < 100 || prereqId > 1000) {
+                        System.out.println("Prerequisite ID " + prereqId + " must be between 100 and 1000.");
+                        waitForEnter();
+                        return;
+                    }
+                    prerequisites.add(prereqId);
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid prerequisite IDs.");
+                waitForEnter();
+                return;
+            }
         }
 
         try {
-            Course course = admin.createCourse(title, description, creditHours, maxCapacity, departmentId);
+            Course course = admin.createCourse(courseId, title, description, creditHours, maxCapacity, departmentId, prerequisites);
             if (course != null) {
                 System.out.println("Course created successfully. Course ID: " + course.getCourseId());
             } else {
@@ -880,6 +919,7 @@ public class ConsoleUI {
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
+        waitForEnter();
     }
 
     private void assignFaculty(AdminStaff admin) {
@@ -1085,7 +1125,131 @@ public class ConsoleUI {
     //---------------------------------------------------------//
 
     private void displaySystemAdminMenu() {
-        // System Admin-specific menu options
+        SystemAdmin admin = (SystemAdmin) currentUser;
+        int choice = -1;
 
+        do {
+            System.out.println("\n╔══════════════════════════════════════════════════════╗");
+            System.out.println("║                  SYSTEM ADMIN PORTAL                 ║");
+            System.out.println("╠══════════════════════════════════════════════════════╣");
+            System.out.println("║ Welcome, " + admin.getName());
+            System.out.println("║ Admin ID: " + admin.getAdminId());
+            System.out.println("║ Security Level: " + admin.getSecurityLevel());
+            System.out.println("╚══════════════════════════════════════════════════════╝");
+
+            System.out.println("\n=== System Admin Menu ===");
+            System.out.println("1. Create User");
+            System.out.println("0. Logout");
+            System.out.print("Enter your choice: ");
+
+            try {
+                choice = Integer.parseInt(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+                waitForEnter();
+                continue;
+            }
+
+            try {
+                switch (choice) {
+                    case 1:
+                        createUser(admin);
+                        break;
+                    case 0:
+                        System.out.println("Logging out...");
+                        break;
+                    default:
+                        System.out.println("Invalid option. Please try again.");
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+            waitForEnter();
+        } while (choice != 0);
+    }
+
+    private void createUser(SystemAdmin admin) {
+        System.out.println("\n=== Create User ===");
+        System.out.println("Select user type:");
+        System.out.println("1. Student");
+        System.out.println("2. Faculty");
+        System.out.println("3. Admin Staff");
+        System.out.println("4. System Admin");
+        System.out.println("0. Cancel");
+        System.out.print("Enter choice: ");
+
+        try {
+            int userTypeChoice = Integer.parseInt(scanner.nextLine().trim());
+            if (userTypeChoice == 0) {
+                System.out.println("Cancelled.");
+                return;
+            }
+
+            if (userTypeChoice < 1 || userTypeChoice > 4) {
+                System.out.println("Invalid user type.");
+                return;
+            }
+
+            System.out.print("Enter username: ");
+            String username = scanner.nextLine().trim();
+            System.out.print("Enter password: ");
+            String password = scanner.nextLine().trim();
+            System.out.print("Enter name: ");
+            String name = scanner.nextLine().trim();
+            System.out.print("Enter email: ");
+            String email = scanner.nextLine().trim();
+            System.out.print("Enter contact info: ");
+            String contactInfo = scanner.nextLine().trim();
+
+            User newUser = null;
+            switch (userTypeChoice) {
+                case 1:
+                    System.out.print("Enter admission date (YYYY-MM-DD): ");
+                    String admissionDate = scanner.nextLine().trim();
+                    newUser = new Student("Student", username, password, name, email, contactInfo, admissionDate, "Active");
+                    break;
+                case 2:
+                    System.out.print("Enter expertise: ");
+                    String expertise = scanner.nextLine().trim();
+                    System.out.print("Enter department ID: ");
+                    int departmentId;
+                    try {
+                        departmentId = Integer.parseInt(scanner.nextLine().trim());
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid department ID.");
+                        return;
+                    }
+                    newUser = new Faculty("Faculty", username, password, name, email, contactInfo, expertise, departmentId);
+                    break;
+                case 3:
+                    System.out.print("Enter department ID: ");
+                    try {
+                        departmentId = Integer.parseInt(scanner.nextLine().trim());
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid department ID.");
+                        return;
+                    }
+                    System.out.print("Enter role (Registrar, Student Affairs, Faculty Affairs, Admissions): ");
+                    String role = scanner.nextLine().trim();
+                    newUser = new AdminStaff("Admin_Staff", username, password, name, email, contactInfo, departmentId, role);
+                    break;
+                case 4:
+                    System.out.print("Enter security level (Low, Medium, High): ");
+                    String securityLevel = scanner.nextLine().trim();
+                    newUser = new SystemAdmin("System_Admin", username, password, name, email, contactInfo, securityLevel);
+                    break;
+            }
+
+            if (newUser != null) {
+                admin.createUser(newUser);
+            } else {
+                System.out.println("Failed to create user.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid number.");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        waitForEnter();
     }
 }

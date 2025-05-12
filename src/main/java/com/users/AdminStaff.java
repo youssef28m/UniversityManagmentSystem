@@ -144,7 +144,8 @@ public class AdminStaff extends User {
      * @return Created Course object, or null if creation fails.
      * @throws SecurityException If role is not authorized.
      */
-    public Course createCourse(String title, String description, int creditHours, int maxCapacity, int departmentId) {
+
+    public Course createCourse(int courseId, String title, String description, int creditHours, int maxCapacity, int departmentId, List<Integer> prerequisites) {
         restrictByRole("Registrar");
         if (db == null) {
             throw new IllegalStateException("DatabaseManager not initialized.");
@@ -159,19 +160,34 @@ public class AdminStaff extends User {
             throw new IllegalArgumentException("Max capacity must be positive.");
         }
         validateDepartmentId(departmentId, db);
+        validateCourseId(courseId);
 
-        Course newCourse = new Course();
-        newCourse.setCourseId(generateCourseId());
-        newCourse.setTitle(title);
-        newCourse.setDescription(description);
-        newCourse.setCreditHours(creditHours);
-        newCourse.setMaxCapacity(maxCapacity);
-        newCourse.setDepartment(departmentId);
+        Course newCourse = new Course(
+                courseId,
+                title,
+                description,
+                creditHours,
+                prerequisites != null ? prerequisites : new ArrayList<>(),
+                null, // schedule
+                null, // instructor
+                maxCapacity,
+                new ArrayList<>(), // enrolled students
+                departmentId
+        );
 
         boolean success = db.addCourse(newCourse);
         return success ? newCourse : null;
     }
 
+
+    private void validateCourseId(int courseId) {
+        if (courseId < 100 || courseId > 1000) {
+            throw new IllegalArgumentException("Course ID must be between 100 and 1000.");
+        }
+        if (db.getCourse(courseId) != null) {
+            throw new IllegalArgumentException("Course ID " + courseId + " is already in use.");
+        }
+    }
     /**
      * Assigns a faculty member to a course.
      *
@@ -406,12 +422,12 @@ public class AdminStaff extends User {
         }
         ArrayList<List<Object>> courses = db.getAllCourses();
         if (courses.isEmpty()) {
-            return 1001;
+            return 101;
         }
         int maxId = courses.stream()
                 .mapToInt(course -> (Integer) course.get(0))
                 .max()
-                .orElse(1000);
+                .orElse(100);
         return maxId + 1;
     }
 

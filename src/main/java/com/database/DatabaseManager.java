@@ -753,6 +753,7 @@ public class DatabaseManager {
             try (var rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return new SystemAdmin(
+                            rs.getString("user_type"),
                             rs.getString("user_id"),
                             rs.getString("username"),
                             rs.getString("password"),
@@ -781,6 +782,7 @@ public class DatabaseManager {
             try (var rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return new SystemAdmin(
+                            rs.getString("user_type"),
                             rs.getString("user_id"),
                             rs.getString("username"),
                             rs.getString("password"),
