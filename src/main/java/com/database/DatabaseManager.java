@@ -1357,6 +1357,30 @@ public class DatabaseManager {
         }
     }
 
+    public List<Department> getAllDepartments() {
+        String sql = "SELECT * FROM departments";
+        List<Department> departments = new ArrayList<>();
+
+        try (var conn = connect(); var pstmt = conn.prepareStatement(sql); var rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                int departmentId = rs.getInt("department_id");
+                String name = rs.getString("name");
+
+                Department department = new Department(
+                        getDeparmentsCourses(departmentId),
+                        getDepartmentsFaculty(departmentId),
+                        name,
+                        departmentId
+                );
+
+                departments.add(department);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving all departments: " + e.getMessage());
+        }
+
+        return departments;
+    }
 
 
 }

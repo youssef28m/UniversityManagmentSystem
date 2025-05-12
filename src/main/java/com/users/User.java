@@ -28,7 +28,8 @@ public abstract class User {
     }
 
     public User(String userType ,String userId ,String username, String password, String name, String email, String contactInfo) {
-        this.userType = UserType.valueOf(userType.toUpperCase());
+        String modifiedUserType = userType.replace(" ", "_");
+        this.userType = UserType.valueOf(modifiedUserType.toUpperCase());
         this.userId = userId;
         setUsername(username);
         setPassword(password);

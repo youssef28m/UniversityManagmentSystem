@@ -1,15 +1,17 @@
 package com.system;
+
 import com.users.*;
+import com.academics.*;
+import com.database.DatabaseManager;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import com.academics.*;
-import com.database.DatabaseManager;
 
-
-
+/**
+ * Represents a university management system.
+ */
 public class University {
     private DatabaseManager db;
     private ArrayList<Department> departments;
@@ -18,7 +20,7 @@ public class University {
     private HashMap<String, String> academicCalendar; // Key: Event name, Value: Date
 
     /**
-     * Initializes the University management system
+     * Initializes the University management system.
      */
     public University() {
         this.db = new DatabaseManager();
@@ -34,9 +36,9 @@ public class University {
     }
 
     /**
-     * Loads initial data from the database
+     * Loads initial data from the database, including users, departments, and courses.
      */
-    private void loadInitialData() {
+    public void loadInitialData() {
         // Load users
         ArrayList<String[]> usersData = db.getAllUsers();
         for (String[] userData : usersData) {
@@ -63,50 +65,57 @@ public class University {
                     break;
                 default:
                     break;
-
             }
         }
-        // todo load departments, courses
 
+        // Load departments
+        List<Department> dbDepartments = db.getAllDepartments();
+        if (dbDepartments != null && !dbDepartments.isEmpty()) {
+            departments.addAll(dbDepartments);
+        }
 
+        // Load courses
+        ArrayList<List<Object>> dbCourses = db.getAllCourses();
+        if (dbCourses != null && !dbCourses.isEmpty()) {
+            for (List<Object> courseData : dbCourses) {
+                Course course = db.getCourse((Integer) courseData.get(0));
+                if (course != null && !courses.contains(course)) {
+                    courses.add(course);
+                }
+            }
+        }
     }
 
     /**
-     * Authenticates a user based on ID and password
+     * Authenticates a user based on ID and password.
+     *
      * @param userId   User ID
      * @param password User password
      * @return User object if authenticated, null otherwise
      */
     public User authenticateUser(String userId, String password) {
         String[] userData = db.getOneUser(userId);
-        if (userData != null) {
-
-            if (userData[2].equals(password)) {
-
-                String userType = userData[6];
-
-                switch (userType) {
-                    case "Student":
-                        return db.getStudentByUserId(userId);
-                    case "Faculty":
-                        return db.getFacultyByUserId(userId);
-                    case "System Admin":
-                        return db.getSystemAdminByUserId(userId);
-                    case "Admin Staff":
-                        return db.getAdminStaffByUserId(userId);
-                    default:
-                        return null;
-                }
+        if (userData != null && userData[2].equals(password)) {
+            String userType = userData[6];
+            switch (userType) {
+                case "Student":
+                    return db.getStudentByUserId(userId);
+                case "Faculty":
+                    return db.getFacultyByUserId(userId);
+                case "System Admin":
+                    return db.getSystemAdminByUserId(userId);
+                case "Admin Staff":
+                    return db.getAdminStaffByUserId(userId);
+                default:
+                    return null;
             }
         }
         return null;
     }
 
     public boolean registerStudent(Student student) {
-
         if (db.addUser(student)) {
             boolean success = db.addStudent(student);
-
             if (success) {
                 users.add(student);
             }
@@ -121,7 +130,6 @@ public class University {
             if (success) {
                 users.add(faculty);
             }
-
             return success;
         }
         return false;
@@ -129,26 +137,20 @@ public class University {
 
     public boolean createDepartment(String name, int id) {
         Department department = new Department(id, name);
-
         boolean success = db.createDepartment(department);
-
         if (success) {
             departments.add(department);
         }
-
         return success;
     }
 
     public boolean offerCourse(Course course) {
         boolean success = db.addCourse(course);
-
-        if (success) {
+        if (success && !courses.contains(course)) {
             courses.add(course);
         }
-
         return success;
     }
-
 
     public ArrayList<Department> getDepartments() {
         return new ArrayList<>(departments);
@@ -177,7 +179,6 @@ public class University {
                 return course;
             }
         }
-        // If not found in local cache, try database
         return db.getCourse(courseId);
     }
 }

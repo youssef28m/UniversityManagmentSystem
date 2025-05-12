@@ -1,0 +1,15 @@
+com\users\Faculty.class
+com\academics\Enrollment.class
+com\Main.class
+com\users\AdminStaff.class
+com\system\University.class
+com\users\SystemAdmin.class
+com\users\User$UserType.class
+com\database\DatabaseManager.class
+com\ConsoleUI.class
+com\users\Student.class
+com\academics\Course.class
+com\users\Student$AcademicStatus.class
+com\users\User.class
+com\system\Department.class
+com\util\Helper.class

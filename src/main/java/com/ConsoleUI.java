@@ -734,7 +734,350 @@ public class ConsoleUI {
     //---------------------------------------------------------//
 
     private void displayAdminMenu() {
-        // Admin-specific menu options
+        AdminStaff admin = (AdminStaff) currentUser;
+        Scanner scanner = new Scanner(System.in);
+        int choice;
+
+        do {
+            System.out.println("\n╔══════════════════════════════════════════════════════╗");
+            System.out.println("║                   ADMIN STAFF PORTAL                 ║");
+            System.out.println("╠══════════════════════════════════════════════════════╣");
+            System.out.println("║ Welcome, " + admin.getName());
+            System.out.println("║ Staff ID: " + admin.getStaffId());
+            System.out.println("║ Role: " + admin.getRole());
+            System.out.println("║ Department ID: " + (admin.getDepartmentId() >= 0 ? admin.getDepartmentId() : "Not Assigned"));
+            System.out.println("╚══════════════════════════════════════════════════════╝");
+
+            System.out.println("\n=== Admin Menu ===");
+            System.out.println("1. Register Student");
+            System.out.println("2. Create Course");
+            System.out.println("3. Assign Faculty to Course");
+            System.out.println("4. Generate Enrollment Report");
+            System.out.println("5. Generate Department Report");
+            System.out.println("6. View All Students");
+            System.out.println("7. View All Courses");
+            System.out.println("8. View All Faculty");
+            System.out.println("9. Update Profile");
+            System.out.println("10. Update Role");
+            System.out.println("0. Logout");
+            System.out.print("Enter your choice: ");
+
+            while (!scanner.hasNextInt()) {
+                System.out.print("Please enter a valid number: ");
+                scanner.next();
+            }
+            choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+
+            try {
+                switch (choice) {
+                    case 1:
+                        registerStudent(admin);
+                        break;
+                    case 2:
+                        createCourse(admin);
+                        break;
+                    case 3:
+                        assignFaculty(admin);
+                        break;
+                    case 4:
+                        System.out.println(admin.generateEnrollmentReport(university));
+                        break;
+                    case 5:
+                        generateDepartmentReport(admin);
+                        break;
+                    case 6:
+                        viewAllStudents(admin);
+                        break;
+                    case 7:
+                        viewAllCourses(admin);
+                        break;
+                    case 8:
+                        viewAllFaculty(admin);
+                        break;
+                    case 9:
+                        updateAdminProfile(admin);
+                        break;
+                    case 10:
+                        updateAdminRole(admin);
+                        break;
+                    case 0:
+                        System.out.println("Logging out...");
+                        break;
+                    default:
+                        System.out.println("Invalid option. Please try again.");
+                }
+            } catch (SecurityException e) {
+                System.out.println("Error: " + e.getMessage());
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+            waitForEnter();
+        } while (choice != 0);
+    }
+
+    private void registerStudent(AdminStaff admin) {
+        System.out.println("\n=== Register Student ===");
+        System.out.print("Enter student name: ");
+        String name = scanner.nextLine().trim();
+        System.out.print("Enter student email: ");
+        String email = scanner.nextLine().trim();
+        System.out.print("Enter student contact info: ");
+        String contactInfo = scanner.nextLine().trim();
+        System.out.print("Enter student password: ");
+        String password = scanner.nextLine().trim();
+
+        try {
+            Student student = admin.registerStudent(name, email, contactInfo, password);
+            if (student != null) {
+                System.out.println("Student registered successfully. Student ID: " + student.getStudentId());
+            } else {
+                System.out.println("Failed to register student.");
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void createCourse(AdminStaff admin) {
+        System.out.println("\n=== Create Course ===");
+        System.out.print("Enter course title: ");
+        String title = scanner.nextLine().trim();
+        System.out.print("Enter course description: ");
+        String description = scanner.nextLine().trim();
+        System.out.print("Enter credit hours: ");
+        int creditHours;
+        try {
+            creditHours = Integer.parseInt(scanner.nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid credit hours.");
+            return;
+        }
+        System.out.print("Enter max capacity: ");
+        int maxCapacity;
+        try {
+            maxCapacity = Integer.parseInt(scanner.nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid max capacity.");
+            return;
+        }
+        System.out.print("Enter department ID: ");
+        int departmentId;
+        try {
+            departmentId = Integer.parseInt(scanner.nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid department ID.");
+            return;
+        }
+
+        try {
+            Course course = admin.createCourse(title, description, creditHours, maxCapacity, departmentId);
+            if (course != null) {
+                System.out.println("Course created successfully. Course ID: " + course.getCourseId());
+            } else {
+                System.out.println("Failed to create course.");
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void assignFaculty(AdminStaff admin) {
+        System.out.println("\n=== Assign Faculty to Course ===");
+        System.out.print("Enter faculty ID: ");
+        String facultyId = scanner.nextLine().trim();
+        System.out.print("Enter course ID: ");
+        int courseId;
+        try {
+            courseId = Integer.parseInt(scanner.nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid course ID.");
+            return;
+        }
+
+        try {
+            Faculty faculty = db.getFaculty(facultyId);
+            Course course = db.getCourse(courseId);
+            if (faculty == null || course == null) {
+                System.out.println("Faculty or course not found.");
+                return;
+            }
+            boolean assigned = admin.assignFaculty(faculty, course);
+            if (assigned) {
+                System.out.println("Faculty assigned successfully.");
+            } else {
+                System.out.println("Failed to assign faculty.");
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void generateDepartmentReport(AdminStaff admin) {
+        System.out.println("\n=== Generate Department Report ===");
+        System.out.print("Enter department ID: ");
+        try {
+            int departmentId = Integer.parseInt(scanner.nextLine().trim());
+            String report = admin.generateDepartmentReport(departmentId, university);
+            System.out.println(report);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid department ID.");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void viewAllStudents(AdminStaff admin) {
+        System.out.println("\n=== View All Students ===");
+        try {
+            List<Student> students = admin.viewAllStudents();
+            if (students.isEmpty()) {
+                System.out.println("No students found.");
+            } else {
+                System.out.println("ID        Name                              Email");
+                System.out.println("--------- -------------------------------- -------------------");
+                for (Student student : students) {
+                    System.out.printf("%-9s %-33s %-19s%n",
+                            student.getStudentId(),
+                            truncateString(student.getName(), 33),
+                            truncateString(student.getEmail(), 19));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void viewAllCourses(AdminStaff admin) {
+        System.out.println("\n=== View All Courses ===");
+        try {
+            List<Course> courses = admin.viewAllCourses();
+            if (courses.isEmpty()) {
+                System.out.println("No courses found.");
+            } else {
+                System.out.println("ID    Course Name                       Dept ID");
+                System.out.println("----  --------------------------------  -------");
+                for (Course course : courses) {
+                    System.out.printf("%-5d %-33s %-7d%n",
+                            course.getCourseId(),
+                            truncateString(course.getTitle(), 33),
+                            course.getDepartment());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void viewAllFaculty(AdminStaff admin) {
+        System.out.println("\n=== View All Faculty ===");
+        try {
+            List<Faculty> faculty = admin.viewAllFaculty();
+            if (faculty.isEmpty()) {
+                System.out.println("No faculty found.");
+            } else {
+                System.out.println("ID        Name                              Department ID");
+                System.out.println("--------- -------------------------------- -------------");
+                for (Faculty f : faculty) {
+                    System.out.printf("%-9s %-33s %-13d%n",
+                            f.getFacultyId(),
+                            truncateString(f.getName(), 33),
+                            f.getDepartment());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void updateAdminProfile(AdminStaff admin) {
+        System.out.println("\n=== Update Profile ===");
+        System.out.println("Current Information:");
+        System.out.println("Name: " + admin.getName());
+        System.out.println("Email: " + admin.getEmail());
+        System.out.println("Contact Info: " + admin.getContactInfo());
+        System.out.println("Department ID: " + admin.getDepartmentId());
+
+        System.out.println("\nWhat would you like to update?");
+        System.out.println("1. Name");
+        System.out.println("2. Email");
+        System.out.println("3. Contact Information");
+        System.out.println("4. Department ID");
+        System.out.println("0. Cancel");
+
+        System.out.print("\nEnter your choice: ");
+        try {
+            int updateChoice = Integer.parseInt(scanner.nextLine().trim());
+
+            switch (updateChoice) {
+                case 0:
+                    System.out.println("Update canceled.");
+                    return;
+                case 1:
+                    System.out.print("Enter new name: ");
+                    String newName = scanner.nextLine().trim();
+                    if (!newName.isEmpty()) {
+                        admin.setName(newName);
+                    } else {
+                        System.out.println("Name cannot be empty.");
+                        return;
+                    }
+                    break;
+                case 2:
+                    System.out.print("Enter new email: ");
+                    String newEmail = scanner.nextLine().trim();
+                    if (!newEmail.isEmpty()) {
+                        admin.setEmail(newEmail);
+                    } else {
+                        System.out.println("Email cannot be empty.");
+                        return;
+                    }
+                    break;
+                case 3:
+                    System.out.print("Enter new contact information: ");
+                    String newContact = scanner.nextLine().trim();
+                    if (!newContact.isEmpty()) {
+                        admin.setContactInfo(newContact);
+                    } else {
+                        System.out.println("Contact information cannot be empty.");
+                        return;
+                    }
+                    break;
+                case 4:
+                    System.out.print("Enter new department ID: ");
+                    int newDepartmentId = Integer.parseInt(scanner.nextLine().trim());
+                    admin.setDepartmentId(newDepartmentId);
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+                    return;
+            }
+
+            boolean updated = admin.updateProfile();
+            if (updated) {
+                System.out.println("\nProfile updated successfully.");
+            } else {
+                System.out.println("\nFailed to update profile.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Please enter a valid number.");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void updateAdminRole(AdminStaff admin) {
+        System.out.println("\n=== Update Role ===");
+        System.out.println("Current Role: " + admin.getRole());
+        System.out.println("Valid Roles: " + String.join(", ", AdminStaff.getValidRoles()));
+        System.out.print("Enter new role: ");
+        try {
+            String newRole = scanner.nextLine().trim();
+            admin.setRole(newRole);
+            System.out.println("Role updated successfully.");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 
     //---------------------------------------------------------//
